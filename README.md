@@ -2,7 +2,7 @@
 
 Author: Dias. A task board extending the Python/HTML/JavaScript application from Homework #1. Add tasks, choose priorities, mark tasks done, filter the list, and see live statistics. Tasks are stored in PostgreSQL.
 
-Public repository: **https://github.com/dikos1705/web_dev**. Homework #1 remains in the repository history.
+Homework #2 branch: **https://github.com/dikos1705/web_dev/tree/homework-2-docker-compose**. Homework #1 remains in the repository history.
 
 ![Dayboard with sample tasks](docs/preview.png)
 
@@ -11,7 +11,7 @@ Public repository: **https://github.com/dikos1705/web_dev**. Homework #1 remains
 Requirements: Docker Desktop running in Linux containers mode, Docker Compose v2, and a free port (default 8082).
 
 ```sh
-git clone https://github.com/dikos1705/web_dev.git
+git clone --branch homework-2-docker-compose https://github.com/dikos1705/web_dev.git
 cd web_dev
 ```
 
@@ -140,7 +140,7 @@ docker compose start
 
 ## Submit
 
-1. Submit **https://github.com/dikos1705/web_dev**.
+1. Submit **https://github.com/dikos1705/web_dev/tree/homework-2-docker-compose**.
 2. Attach the separately supplied `.env` file in the homework system. Keep it out of GitHub.
 3. Press **Turn In**. See `DEFENSE_RU.md` for the defense walkthrough.
 
