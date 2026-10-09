@@ -1,0 +1,40 @@
+name: web-homework-2
+services:
+  backend:
+    build: .
+    ports:
+      - "127.0.0.1:${APP_PORT:-8082}:8000"
+    environment:
+      PORT: "8000"
+      APP_MESSAGE: ${APP_MESSAGE:-Make room for good work.}
+      DB_HOST: database
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-taskboard}
+      DB_USER: ${POSTGRES_USER:-taskboard}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your local .env}
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [app-network]
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taskboard}
+      POSTGRES_USER: ${POSTGRES_USER:-taskboard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your local .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+    networks: [app-network]
+volumes:
+  postgres-data:
+networks:
+  app-network:
+    driver: bridge

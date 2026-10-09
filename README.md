@@ -1,101 +1,147 @@
-# Homework #1 — Containerized Web Application
+# Homework #2 — Dayboard with Docker Compose
 
-A small Python web server with an HTML/CSS/JavaScript interface, an interactive counter, and a configurable greeting. Author: Dias.
+Author: Dias. A task board extending the Python/HTML/JavaScript application from Homework #1. Add tasks, choose priorities, mark tasks done, filter the list, and see live statistics. Tasks are stored in PostgreSQL.
 
-## Requirements
+Public repository: **https://github.com/dikos1705/web_dev**. Homework #1 remains in the repository history.
 
-- Docker Desktop running in Linux containers mode (or Docker Engine on Linux).
-- A free host port, such as 8080.
+![Dayboard with sample tasks](docs/preview.png)
 
-## Build and run
+## Start
 
-Open a terminal in this repository's directory:
-
-```sh
-docker build -t web-homework:1.0 .
-docker run -d --name web-homework -p 127.0.0.1:8080:8000 -e APP_MESSAGE="Hello from Dias!" web-homework:1.0
-```
-
-Open **http://localhost:8080**. Click **Add one +** and **Reset** to try the counter. The greeting is loaded from the Python server, using the `APP_MESSAGE` environment variable.
-
-`8080:8000` maps host port 8080 to container port 8000. The host binding is restricted to the local computer. The application listens on `0.0.0.0` inside the container so Docker can forward traffic to it.
-
-## Verify and stop
-
-```sh
-docker ps --filter name=web-homework
-docker logs web-homework
-docker inspect --format='{{.State.Health.Status}}' web-homework
-```
-
-The health status becomes `healthy` after the health check runs. Visit http://localhost:8080/health for `{"status":"ok"}` and http://localhost:8080/api/info for the runtime greeting and port.
-
-```sh
-docker stop web-homework
-docker rm web-homework
-```
-
-## Environment variables
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `APP_MESSAGE` | `Hello from Docker!` | Greeting displayed on the page |
-| `PORT` | `8000` | Port listened to by the Python server |
-
-To change both the greeting and the internal port, use a separate container:
-
-```sh
-docker run -d --name web-homework-custom -p 127.0.0.1:8081:9000 -e PORT=9000 -e APP_MESSAGE="My custom greeting" web-homework:1.0
-```
-
-Open http://localhost:8081. Clean up with `docker stop web-homework-custom` followed by `docker rm web-homework-custom`.
-
-## Files and Dockerfile
-
-- `app.py`: HTTP server and `/`, `/api/info`, `/health` routes; unknown routes return 404.
-- `index.html`: responsive interface, counter, and API request.
-- `Dockerfile`: image build and startup instructions.
-- `.dockerignore`: allows only the application and Docker build files into the build context.
-- `DEFENSE_RU.md`: explanation and live-change walkthrough in Russian.
-
-| Instruction | Purpose |
-| --- | --- |
-| `FROM python:3.12-slim` | Small Python base image |
-| `WORKDIR /app` | Working directory for subsequent instructions and startup |
-| `ENV` | Default runtime settings, overridable with `docker run -e` |
-| `RUN` | Creates a dedicated unprivileged user during the build |
-| `COPY --chown` | Copies only the two required application files with appropriate ownership |
-| `USER` | Runs the application without root privileges |
-| `EXPOSE` | Documents the default container port; does not publish it |
-| `HEALTHCHECK` | Requests the application's health endpoint |
-| `CMD` | Starts Python using exec form |
-
-Basic optimization: slim base, no third-party dependencies or package installation, minimal build context, and stable user-creation step before changing source files for build-cache reuse. A multi-stage build is unnecessary because this application has no compilation step. Python's standard-library HTTP server is sufficient for this classroom demonstration; it is not a production deployment server.
-
-## Live change and rebuild
-
-Change `Try the app` in `index.html` to `My updated app`, save, and run:
-
-```sh
-docker build -t web-homework:2.0 .
-docker stop web-homework
-docker rm web-homework
-docker run -d --name web-homework -p 127.0.0.1:8080:8000 -e APP_MESSAGE="Updated version by Dias!" web-homework:2.0
-```
-
-Refresh http://localhost:8080 to see the updated heading. Source changes require rebuilding and recreating the container; changing `APP_MESSAGE` only requires recreating it with a new `-e` value.
-
-## Automated verification
-
-The GitHub Actions workflow in `.github/workflows/docker.yml` builds the image, runs two containers, and checks the HTML page, health endpoint, environment overrides, custom port, 404 responses, non-root user and Docker health status. See the repository's **Actions** tab for actual run results.
-
-## Submit on GitHub
-
-Repository: **https://github.com/dikos1705/web_dev**. To download it on another computer:
+Requirements: Docker Desktop running in Linux containers mode, Docker Compose v2, and a free port (default 8082).
 
 ```sh
 git clone https://github.com/dikos1705/web_dev.git
 cd web_dev
 ```
 
-Then follow the build and run commands above. Ensure the instructor can access the repository, submit **https://github.com/dikos1705/web_dev** in the homework page, then press **Turn In**.
+Place the separately supplied `.env` file in this folder. Alternatively, copy `.env.example` to `.env` and replace its password placeholder with a unique local password.
+
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+```sh
+# macOS / Linux
+cp .env.example .env
+```
+
+Start the entire application:
+
+```sh
+docker compose up -d --build --wait
+```
+
+Open **http://localhost:8082**. If `APP_PORT` differs in your `.env`, use that port. The initial board is empty. Add your own tasks; they survive refresh and container recreation. `docker compose up` also starts everything in foreground. Rebuild after changing source files.
+
+## Architecture
+
+```text
+Browser: localhost:8082
+       | HTTP
+       v
+backend:8000 (Flask + Gunicorn, custom Dockerfile)
+       | PostgreSQL connection to database:5432
+       v
+database (PostgreSQL 17) --> postgres-data named volume
+```
+
+Both services join `app-network`, a bridge network. `database` is the Compose service name and DNS hostname. Only the backend is published to the host, bound to 127.0.0.1. The database has no host port.
+
+| Requirement | Implementation |
+| --- | --- |
+| Meaningful backend API | Task create/list/complete/delete and statistics |
+| Relational database | PostgreSQL 17, `tasks` table with primary key and constraints |
+| Reads AND writes | Parameterized SQL SELECT, INSERT, UPDATE and DELETE via psycopg |
+| Custom Dockerfile | Python slim, installed dependencies, non-root user UID 10001, Gunicorn and healthcheck |
+| Services and dependencies | `backend`, `database`, and `depends_on: service_healthy` |
+| Environment configuration | `.env` supplies database name/user/password, host port and heading |
+| Password handling | Required from environment; real `.env` ignored by Git and excluded from image |
+| Persistent data | Named `postgres-data` volume at `/var/lib/postgresql/data` |
+| One startup command | `docker compose up` |
+| Ignore files | `.gitignore` excludes real env files, explicitly allows `.env.example`; `.dockerignore` allows only build inputs |
+
+Backend startup retries database connections and creates the table idempotently. Each request uses a database connection context: successful writes commit and exceptions roll back. Titles use `textContent` in the browser. The backend serves the interface, so there is no third frontend container or CORS setup.
+
+## Configuration
+
+| Variable | Purpose |
+| --- | --- |
+| `POSTGRES_PASSWORD` | Required local password; template contains a placeholder |
+| `POSTGRES_DB` | Database name, default `taskboard` |
+| `POSTGRES_USER` | Database user, default `taskboard` |
+| `APP_PORT` | Host HTTP port, default `8082` |
+| `APP_MESSAGE` | Heading returned by `/api/info` |
+
+Compose passes `DB_HOST=database`, `DB_PORT=5432`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` to the backend. Backend listens on `PORT=8000`.
+
+Changing `POSTGRES_PASSWORD` after a persistent database has been initialized does not change its existing user's password. Keep the original configuration when reusing its volume.
+
+## API
+
+| Method | Endpoint | Behavior |
+| --- | --- | --- |
+| GET | `/` | Browser interface |
+| GET | `/health` | Real database connectivity check |
+| GET | `/api/info` | Runtime heading and internal port |
+| GET | `/api/tasks` | Read tasks from PostgreSQL |
+| POST | `/api/tasks` | Create task; returns 201; JSON `title` and optional `priority` |
+| PATCH | `/api/tasks/{id}` | Set `completed` using a JSON boolean |
+| DELETE | `/api/tasks/{id}` | Delete task; returns 204 |
+| GET | `/api/stats` | SQL counts: total, completed, remaining, urgent |
+
+Example POST body: `{"title":"Prepare the Compose demo","priority":"high"}`. Example PATCH body: `{"completed":true}`. Priority is `low`, `medium`, or `high`; title length is 1–120 characters after trimming.
+
+Invalid input produces JSON errors, missing tasks return 404, and database failures return 503 without connection details. This local classroom board has no account system; clients share the board.
+
+## Prove persistence
+
+Add a task and mark it completed, then run:
+
+```sh
+docker compose down
+docker compose up -d --wait
+```
+
+Refresh the page: the task and completion flag remain. Containers and network were removed and recreated; the named volume remained. Keep volume-removal options out of the shutdown command when preserving tasks.
+
+## Verification
+
+After startup, use Python 3.10+:
+
+```sh
+python verify.py
+python verify.py --persistence
+```
+
+The persistence mode recreates both containers of this Compose project, verifies a unique test task survives, and removes only its own test records. It leaves the volume and application running. For another host port, use `--base-url http://127.0.0.1:YOUR_PORT`.
+
+Checks cover HTML, database health, real CRUD, SQL statistics, validation, unknown IDs, safe handling of SQL-looking text, ten concurrent writes, non-root backend, exclusion of `.env` from the image, and data persistence. GitHub Actions repeats these checks using an ephemeral random password generated on its runner.
+
+Local Compose/API/persistence checks passed with both containers healthy. The browser check also passed for adding tasks, refresh persistence, completion, filtering, deletion and a 390px mobile viewport.
+
+Optional browser check (requires Playwright separately from the backend):
+
+```sh
+python -m pip install playwright
+python -m playwright install chromium
+python browser_check.py
+```
+
+Useful commands:
+
+```sh
+docker compose ps
+docker compose logs --tail=50
+docker compose stop
+docker compose start
+```
+
+## Submit
+
+1. Submit **https://github.com/dikos1705/web_dev**.
+2. Attach the separately supplied `.env` file in the homework system. Keep it out of GitHub.
+3. Press **Turn In**. See `DEFENSE_RU.md` for the defense walkthrough.
+
+References: [Compose readiness](https://docs.docker.com/compose/how-tos/startup-order/), [Docker volumes](https://docs.docker.com/engine/storage/volumes/), [psycopg queries and transactions](https://www.psycopg.org/psycopg3/docs/basic/usage.html).

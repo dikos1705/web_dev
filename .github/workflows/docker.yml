@@ -1,4 +1,4 @@
-name: Docker build and smoke test
+name: Compose API and persistence tests
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
@@ -7,50 +7,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build image
-        run: docker build -t web-homework:test .
-      - name: Run containers
-        run: |
-          docker run -d --name homework -p 127.0.0.1:8080:8000 -e APP_MESSAGE="Hello from CI!" web-homework:test
-          docker run -d --name custom -p 127.0.0.1:8081:9000 -e PORT=9000 -e APP_MESSAGE="Custom port works" web-homework:test
-      - name: Verify HTTP endpoints and configuration
+      - name: Create ephemeral local configuration
         shell: python
         run: |
-          import json, time, urllib.request, urllib.error
-          for port, message, internal in [(8080, 'Hello from CI!', 8000), (8081, 'Custom port works', 9000)]:
-              base = f'http://127.0.0.1:{port}'
-              for attempt in range(30):
-                  try:
-                      response = urllib.request.urlopen(base + '/health', timeout=2)
-                      assert json.load(response) == {'status': 'ok'}
-                      break
-                  except (OSError, AssertionError):
-                      if attempt == 29:
-                          raise
-                      time.sleep(1)
-              assert b'Docker Lab' in urllib.request.urlopen(base + '/').read()
-              assert json.load(urllib.request.urlopen(base + '/api/info')) == {'message': message, 'port': internal}
-              try:
-                  urllib.request.urlopen(base + '/missing')
-                  raise AssertionError('Expected 404')
-              except urllib.error.HTTPError as error:
-                  assert error.code == 404
-              print(f'PASS: HTML, health, environment, port and 404 on {port}')
-      - name: Verify non-root user and container health
-        run: |
-          test "$(docker exec homework id -u)" = "10001"
-          for i in $(seq 1 45); do
-            if [ "$(docker inspect --format='{{.State.Health.Status}}' homework)" = healthy ] && [ "$(docker inspect --format='{{.State.Health.Status}}' custom)" = healthy ]; then
-              exit 0
-            fi
-            sleep 1
-          done
-          exit 1
+          from pathlib import Path
+          import secrets
+          text = Path('.env.example').read_text().replace('replace-with-a-unique-local-password', secrets.token_hex(24))
+          Path('.env').write_text(text)
+      - name: Start backend and PostgreSQL
+        run: docker compose up -d --build --wait --wait-timeout 180
+      - name: Verify API and persistence after recreating containers
+        run: python3 verify.py --persistence
       - name: Container logs
         if: always()
         run: |
-          docker logs homework || true
-          docker logs custom || true
+          docker compose logs --tail=80 || true
       - name: Clean up
         if: always()
-        run: docker rm -f homework custom || true
+        run: docker compose down || true
