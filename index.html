@@ -1,23 +1,77 @@
-﻿<!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dayboard · A little focus, every day</title>
-<style>
-:root{--ink:#213c35;--muted:#68756c;--line:#dce3d8;--paper:#f6f7f1;--accent:#235744}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px system-ui,sans-serif}main{max-width:1060px;margin:auto;padding:32px 28px 60px}header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:22px}.brand{font-weight:800;letter-spacing:-1px;font-size:24px}.brand span{color:#89a25b}.status{font-size:12px;border:1px solid var(--line);border-radius:30px;padding:7px 12px;color:var(--muted)}.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--muted)}.hero{padding:44px 0 26px}h1{font-size:clamp(32px,5vw,54px);letter-spacing:-2px;line-height:1.1;margin:12px 0}p{color:var(--muted);line-height:1.6}h2{font-size:20px;margin:0 0 18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}.stat{border:1px solid var(--line);border-radius:12px;padding:19px 22px;background:white}.stat strong{font-size:32px;display:block;margin-top:6px}.stat:last-child{background:#eaf0df}.layout{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}.card{background:white;border:1px solid var(--line);border-radius:14px;padding:24px}label{display:block;font-size:13px;font-weight:600;margin:15px 0 7px}input,select{font:inherit;width:100%;border:1px solid #cdd7cc;border-radius:8px;padding:11px;background:white;color:var(--ink)}button{font:inherit;border:0;border-radius:8px;padding:11px 15px;cursor:pointer;background:var(--accent);color:white}button:hover{filter:brightness(1.12)}button:disabled{opacity:.5;cursor:wait}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #d0ab53;outline-offset:3px}.submit{width:100%;margin-top:20px}.note{font-size:12px;line-height:1.6}.list-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.list-head h2{margin:0}.filters{display:flex;gap:5px;margin:22px 0}.filter{font-size:12px;padding:7px 11px;color:var(--muted);background:#f1f4ed}.filter.active{background:var(--ink);color:white}.tasks{list-style:none;padding:0;margin:0}.task{display:flex;gap:12px;align-items:center;border-top:1px solid #ecf0e7;padding:16px 0}.toggle{padding:0;flex:0 0 24px;height:24px;border:1px solid #bbcabc;background:white;color:var(--ink)}.done .toggle{background:var(--accent);color:white}.task-body{flex:1;min-width:0}.task-title{display:block;overflow-wrap:anywhere;font-size:15px}.done .task-title{text-decoration:line-through;color:var(--muted)}.priority{display:inline-block;font-size:10px;padding:3px 7px;border-radius:5px;margin-top:5px;background:#f0f3eb;text-transform:uppercase;letter-spacing:.6px}.priority.high{background:#fbede1;color:#a3511d}.remove{background:transparent;color:#7d8b80;padding:5px;font-size:20px}.empty{text-align:center;padding:28px 10px;color:var(--muted);font-size:14px}#feedback{min-height:22px;margin:10px 0;color:var(--muted);font-size:13px}footer{font-size:12px;color:var(--muted);margin-top:28px;border-top:1px solid var(--line);padding-top:18px}@media(max-width:700px){main{padding:24px 18px}.layout{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:14px 12px}.eyebrow{letter-spacing:1px;font-size:10px}h1{letter-spacing:-1px}.hero{padding-top:30px}}
-</style></head><body><main>
-<header><div class="brand">dayboard<span>.</span></div><span class="status" id="status">Connecting…</span></header>
-<section class="hero"><span class="eyebrow">A little focus, every day</span><h1 id="message">Make room for good work.</h1><p>Capture what matters. Finish one thing at a time.<br>Your tasks will be here when you come back.</p></section>
-<section class="stats" aria-label="Task statistics"><div class="stat"><span class="eyebrow">Still to do</span><strong id="remaining">—</strong></div><div class="stat"><span class="eyebrow">Completed</span><strong id="completed">—</strong></div><div class="stat"><span class="eyebrow">High priority</span><strong id="urgent">—</strong></div></section>
-<div class="layout"><section class="card"><h2>A fresh intention</h2><form id="form"><label for="title">What needs doing?</label><input id="title" name="title" maxlength="120" required placeholder="e.g. Finish the reading notes"><label for="priority">Priority</label><select id="priority" name="priority"><option value="medium">Medium · make time for it</option><option value="high">High · start here</option><option value="low">Low · when there's room</option></select><button class="submit" id="add" type="submit">Add to my day +</button></form><p class="note">Keep it small and specific. A clear next step is easier to start.</p></section>
-<section class="card"><div class="list-head"><h2>Your list</h2><span class="eyebrow" id="total">0 tasks</span></div><div class="filters" aria-label="Filter tasks"><button class="filter active" data-filter="all" type="button" aria-pressed="true">All</button><button class="filter" data-filter="open" type="button" aria-pressed="false">To do</button><button class="filter" data-filter="done" type="button" aria-pressed="false">Done</button></div><ul class="tasks" id="tasks"></ul><div id="feedback" role="status" aria-live="polite"></div></section></div>
-<footer>Dias · Web Development · Homework #2</footer></main>
-<script>
-let tasks=[],filter='all';
-const feedback=document.getElementById('feedback');
-async function api(path,options={}){const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',...options.headers}});if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||'Please try again.')}return response.status===204?null:response.json()}
-function render(){const list=document.getElementById('tasks');list.replaceChildren();const visible=tasks.filter(t=>filter==='all'||(filter==='done'?t.completed:!t.completed));if(!visible.length){const li=document.createElement('li');li.className='empty';li.textContent=tasks.length?'No tasks in this view.':'A clear page, a fresh start. Add your first task.';list.append(li)}for(const task of visible){const li=document.createElement('li');li.className='task'+(task.completed?' done':'');const toggle=document.createElement('button');toggle.className='toggle';toggle.type='button';toggle.textContent=task.completed?'✓':'';toggle.setAttribute('aria-label',(task.completed?'Reopen ':'Complete ')+task.title);toggle.setAttribute('aria-pressed',String(task.completed));toggle.onclick=()=>mutate(`/api/tasks/${task.id}`,{method:'PATCH',body:JSON.stringify({completed:!task.completed})},toggle);const body=document.createElement('div');body.className='task-body';const title=document.createElement('span');title.className='task-title';title.textContent=task.title;const priority=document.createElement('span');priority.className='priority '+task.priority;priority.textContent=task.priority;body.append(title,priority);const remove=document.createElement('button');remove.className='remove';remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete '+task.title);remove.onclick=()=>mutate(`/api/tasks/${task.id}`,{method:'DELETE'},remove);li.append(toggle,body,remove);list.append(li)}}
-async function refresh(){const [data,stats]=await Promise.all([api('/api/tasks'),api('/api/stats')]);tasks=data.tasks;for(const key of ['remaining','completed','urgent'])document.getElementById(key).textContent=stats[key];document.getElementById('total').textContent=stats.total+' tasks';render();document.getElementById('status').textContent='Ready for your day'}
-async function mutate(path,options,button){button.disabled=true;feedback.textContent='Saving…';try{await api(path,options);await refresh();feedback.textContent='Saved.';return true}catch(error){feedback.textContent=error.message;return false}finally{button.disabled=false}}
-document.getElementById('form').onsubmit=async(event)=>{event.preventDefault();const title=document.getElementById('title');if(!title.value.trim()){feedback.textContent='Please give your task a title.';return}if(await mutate('/api/tasks',{method:'POST',body:JSON.stringify({title:title.value,priority:document.getElementById('priority').value})},document.getElementById('add'))){title.value='';title.focus()}};
-document.querySelectorAll('.filter').forEach(button=>button.onclick=()=>{filter=button.dataset.filter;document.querySelectorAll('.filter').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button))});render()});
-async function start(){try{const info=await api('/api/info');document.getElementById('message').textContent=info.message;await refresh()}catch(error){document.getElementById('status').textContent='Connection unavailable';feedback.textContent=error.message}}start();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docker Lab | Homework 1</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f5f0; color: #18332d; font-family: system-ui, sans-serif; }
+    main { max-width: 850px; margin: 0 auto; padding: 48px 24px; }
+    header { display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px solid #ccd5ce; padding-bottom: 20px; }
+    .label { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    .badge { border: 1px solid #ccd5ce; padding: 6px 12px; border-radius: 30px; font-size: 12px; }
+    .hero { padding: 58px 0 32px; }
+    h1 { font-size: clamp(36px, 7vw, 64px); line-height: 1.08; letter-spacing: -2px; margin: 18px 0; overflow-wrap: anywhere; }
+    p { color: #52665f; line-height: 1.65; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    section.card { background: white; padding: 26px; border: 1px solid #dce3dd; border-radius: 16px; }
+    h2 { font-size: 19px; margin: 0 0 12px; }
+    code { background: #edf2ed; padding: 3px 6px; border-radius: 4px; }
+    .number { display: block; font-size: 52px; font-weight: 700; margin: 12px 0; }
+    button { background: #183f34; color: white; border: 0; border-radius: 8px; padding: 12px 18px; cursor: pointer; font: inherit; }
+    button:hover { background: #29604f; }
+    button:focus-visible { outline: 3px solid #c28b34; outline-offset: 3px; }
+    .secondary { background: #e8eee8; color: #18332d; }
+    .secondary:hover { background: #d6e0d6; }
+    footer { margin-top: 32px; font-size: 12px; color: #52665f; }
+    @media (max-width: 580px) { .grid { grid-template-columns: 1fr; } header { align-items: center; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header><span class="label">Docker Lab / 01</span><span class="badge" id="status">Connecting…</span></header>
+    <div class="hero">
+      <span class="label">Web Development · Homework #1</span>
+      <h1 id="message">Loading your greeting…</h1>
+      <p>A small web application, packaged in a Docker image.<br>Python serves the page. JavaScript brings it to life.</p>
+    </div>
+    <div class="grid">
+      <section class="card">
+        <h2>Try the app</h2>
+        <p>A simple interactive counter. Refreshing the page resets it.</p>
+        <output class="number" id="count" aria-live="polite">0</output>
+        <button id="increment" type="button">Add one +</button>
+        <button id="reset" class="secondary" type="button">Reset</button>
+      </section>
+      <section class="card">
+        <h2>Runtime configuration</h2>
+        <p>The greeting above comes from the server's <code>APP_MESSAGE</code> environment variable.</p>
+        <p>Application port: <strong id="port">—</strong></p>
+        <p>Change the greeting with <code>docker run -e</code> and start a new container.</p>
+      </section>
+    </div>
+    <footer>Dias · Web Development · Python / HTML / CSS / JavaScript</footer>
+  </main>
+  <script>
+    let count = 0;
+    const output = document.getElementById('count');
+    document.getElementById('increment').addEventListener('click', () => { output.textContent = ++count; });
+    document.getElementById('reset').addEventListener('click', () => { count = 0; output.textContent = count; });
+    async function loadInfo() {
+      try {
+        const response = await fetch('/api/info');
+        if (!response.ok) throw new Error('Server unavailable');
+        const info = await response.json();
+        document.getElementById('message').textContent = info.message;
+        document.getElementById('port').textContent = info.port;
+        document.getElementById('status').textContent = 'Server connected';
+      } catch (error) {
+        document.getElementById('message').textContent = 'Cannot connect to the server';
+        document.getElementById('status').textContent = 'Connection error';
+      }
+    }
+    loadInfo();
+  </script>
+</body>
+</html>
