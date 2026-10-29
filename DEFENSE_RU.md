@@ -1,128 +1,87 @@
-# Dayboard: preparation for the online defense / Подготовка к защите
+# Aeron — подготовка к защите / Defense notes
 
-## A 5-minute demonstration / Демонстрация
+## Короткая демонстрация (3–5 минут)
 
-1. Open this branch in your editor. Show `compose.yaml`, `Dockerfile` and `app.py`.
-   / Открой эту ветку в редакторе, покажи файлы конфигурации и маршруты.
-2. Run `docker compose up`. Open another terminal for `docker compose ps`.
-   / Запусти приложение и покажи, что оба контейнера healthy.
-3. Open `http://localhost:8083` and add/edit/complete a task.
-   / Покажи, что интерфейс работает с реальной базой.
-4. Import the Postman Collection and run requests 01-17 in order.
-   / В Postman покажи GET списка, POST, GET по ID, PUT, PATCH и DELETE.
-5. Show `python verify.py --persistence` if asked to prove persistent storage.
-   / Этот скрипт пересоздаёт контейнеры проекта и проверяет сохранённую запись.
+1. `docker compose ps`: два здоровых контейнера — backend и database. Открыть localhost:8083, показать поиск Almaty → Astana на завтра, сортировку, цены и остаток мест.
+2. Выбрать рейс, Standard, место у окна, ввести Alex Morgan / alex@example.com. Создать демонстрационную бронь, скачать маршрут. Открыть My bookings, изменить имя пассажира, обновить страницу — бронь остаётся.
+3. В Postman импортировать коллекцию и приватное локальное окружение. Run collection: показать полный CRUD рейса и брони, 401 без ключа, 409 занятого места, 200 при повторе запроса, отмену и удаление.
+4. `python verify.py --persistence`: показать конкуренцию и сохранение данных после удаления/создания контейнеров. Данные лежат в named volume, а не в файловой системе backend.
+5. Объяснить services.py, models.py и compose.yaml. Все рейсы синтетические: нет интеграции авиакомпании, платежей или выдачи настоящих билетов.
 
-## Questions and answers / Вопросы и ответы
+## Вопрос → ответ / Question → answer
 
-**What does the project do? / Что делает проект?**
+**What is FastAPI? / Что такое FastAPI?**
 
-EN: Dayboard is a task board. Flask provides REST endpoints, PostgreSQL stores
-tasks, and Docker Compose starts the services together.
+Python framework for typed HTTP APIs. Pydantic validates requests and response models; OpenAPI generates Swagger documentation. Здесь main.py описывает маршруты, schemas.py — контракт входа/выхода. Невалидные данные возвращают 422 до бизнес-операции.
 
-RU: Это планировщик задач. Flask обрабатывает HTTP, PostgreSQL хранит задачи,
-а Compose запускает приложение и базу одной командой.
+**Why are routes ordinary `def`, not `async def`? / Почему обычные функции?**
 
-**Image vs container? / Образ и контейнер?**
+The SQLAlchemy/psycopg database stack is synchronous. FastAPI runs synchronous endpoints in its worker thread pool, so database calls do not run directly on the event loop. Нельзя просто добавить async к блокирующим запросам и считать, что они стали неблокирующими.
 
-EN: An image is a packaged filesystem and startup configuration. A container
-is a running instance created from that image.
+**What does `Depends` do? / Для чего Depends?**
 
-RU: Образ - шаблон файлов и настроек запуска; контейнер - запущенный экземпляр.
+Dependency injection provides a per-request SQLAlchemy session and header-based authorization. `get_db` закрывает сессию после запроса; require_admin сверяет ключ, authorize_booking проверяет конкретный токен брони. Одна глобальная Session между потоками не используется.
 
-**What does the Dockerfile do? / Зачем Dockerfile?**
+**How do you prevent double booking? / Что если два клиента выберут одно место?**
 
-EN: It starts from Python slim, installs dependencies, copies source, switches
-to a non-root user, declares the container port and starts Gunicorn.
+All inventory writes lock the same flight row with SELECT FOR UPDATE inside one transaction. Второй запрос ждёт, затем видит уже занятое место и получает 409. Дополнительно частичный уникальный индекс `(flight_id, seat) WHERE status='confirmed'` не позволит сохранить дубликат даже при ошибке в коде. verify.py действительно отправляет два HTTP-запроса параллельно и проверяет один 201 и один 409.
 
-RU: Описывает сборку backend: Python, зависимости, исходники, пользователь,
-проверка здоровья и команда Gunicorn. EXPOSE сам не публикует порт на компьютере.
+**Why lock the flight before the booking? / Зачем одинаковый порядок блокировок?**
 
-**What is Compose? / Что такое Compose?**
+A consistent lock order reduces deadlock risk. Создание, изменение, отмена и удаление сначала блокируют рейс. Компромисс: разные места одного рейса тоже обрабатываются последовательно; для небольшого учебного сервиса это простой и понятный способ обеспечить корректность.
 
-EN: A declarative configuration for services, networks, volumes and environment
-variables. `docker compose up` builds/starts the complete application.
+**What is a transaction? / Что такое транзакция?**
 
-RU: YAML-конфигурация связанных сервисов, сетей, томов и переменных окружения.
+A group of changes committed together or rolled back together. В `with db.begin()` изменение места и проверка доступности относятся к одной операции. Если новое место занято, исключение откатывает всю операцию, старое место не теряется.
 
-**Why database:5432 instead of localhost? / Почему такой адрес базы?**
+**Why an idempotency key? / Что если ответ потерялся?**
 
-EN: Compose provides DNS for service names on the bridge network. In the backend,
-localhost is the backend itself, so PostgreSQL is reached as database:5432.
+Client generates a UUID `request_key` once per booking intent. Exact retry returns the same booking with 200 instead of creating a duplicate. Сервер хранит уникальный ключ и хеш нормализованного запроса. Тот же ключ с другими данными → 409. Ключ приватный, повтор может восстановить токен управления; после удаления брони история повтора удаляется.
 
-RU: Имена сервисов работают как DNS внутри сети. localhost backend-контейнера
-не указывает на контейнер базы.
+**How do you calculate money? / Почему не float?**
 
-**What does 8083:8000 mean? / Что означают два порта?**
+Integer KZT avoids floating-point rounding errors. Standard = ceil(base × 125 / 100), Flex = ceil(base × 150 / 100). Цена приходит из БД и рассчитывается сервером. Поле total_kzt от клиента запрещено, его нельзя подменить.
 
-EN: Host port 8083 forwards to container port 8000. The browser uses 8083;
-another container calls backend:8000. PostgreSQL has no published host port.
+**How is access controlled? / Кто видит чужие брони?**
 
-RU: Слева порт компьютера, справа порт внутри контейнера. База наружу не открыта.
+An admin key protects flight writes and booking lists. Each reservation has a separate HMAC-derived management token. Браузер не знает admin key, хранит только ID и токен своих броней. Это capability-based demo без аккаунтов: владелец токена может управлять бронью. Для публичного продукта нужны полноценные аккаунты, TLS и защита от злоупотреблений.
 
-**Why a named volume? / Зачем именованный том?**
+**Why can’t an administrator edit a booked flight? / Почему рейс с бронью нельзя поменять?**
 
-EN: The writable container filesystem is disposable. The named volume stores
-PostgreSQL data separately and is reused after container recreation.
-
-RU: Контейнер можно удалить, а том с данными остаётся. `down` сохраняет его,
-`down -v` удаляет вместе с данными этого проекта.
-
-**Why environment variables? / Зачем переменные окружения?**
-
-EN: They separate configuration from source. The password is read at runtime;
-the real .env is not committed or copied into the backend image.
-
-RU: Пароль, порт и название базы можно менять без правки исходников. `.env`
-передаётся отдельно, `.env.example` показывает только формат.
-
-**What is CRUD? / Что такое CRUD?**
-
-EN: Create = POST; read = GET; update = PUT/PATCH; delete = DELETE. PostgreSQL
-executes INSERT, SELECT, UPDATE and DELETE behind those routes.
-
-RU: Четыре операции с ресурсом. ID генерирует база; клиент берёт его из POST.
+Changing a flight would silently change an existing itinerary. Сервис запрещает изменение/удаление при любой истории бронирований, включая отменённые. Сначала нужно отменить и удалить связанные записи; это явное ограничение демо.
 
 **PUT vs PATCH? / В чём разница?**
 
-EN: Our PUT requires all editable fields. PATCH changes supplied fields and
-keeps the rest. Both return 404 for a missing task; neither silently creates it.
+PUT replaces the complete editable representation, PATCH changes only supplied fields. PUT рейса требует все поля; PUT брони — имя и email. PATCH брони меняет непустой набор имени/email/места. null и неизвестные поля запрещены.
 
-RU: PUT заменяет все изменяемые поля, PATCH меняет только переданные.
+**401, 404, 409, 422? / Какие ошибки?**
 
-**Why 201, 204, 400 and 404? / Зачем разные HTTP-коды?**
+401 missing/wrong key; 404 resource not found; 409 conflict with current state; 422 invalid input. Занятое место — корректный запрос, но конфликт состояния (409). Неверный формат места — нарушение контракта (422).
 
-EN: 201 means created; 204 means successful deletion with no body; 400 is an
-invalid request; 404 means the resource does not exist.
+**Image vs container? / Образ и контейнер?**
 
-RU: HTTP-код описывает результат. В отрицательных тестах 400/404 ожидаемы.
+An image is a packaged filesystem and startup configuration; a container is a running instance. Dockerfile собирает backend, Compose запускает его и PostgreSQL с настройками сети, переменных и тома. Изменение исходников требует `docker compose up -d --build`.
 
-**How are SQL injection and HTML titles handled? / Как обрабатываются SQL и HTML?**
+**Why is DB_HOST `database`? / Почему не localhost?**
 
-EN: Values are bound through Psycopg placeholders. The frontend uses textContent
-for task titles, so HTML-looking input is displayed as text.
+Compose DNS resolves service names on the shared network. Inside backend, localhost means the backend container itself. PostgreSQL доступен как database:5432. Хост публикует только backend на 127.0.0.1:8083 → 8000; база наружу не опубликована.
 
-RU: SQL-команды не склеиваются с пользовательскими значениями. Текст задачи
-не вставляется в DOM как HTML.
+**What survives `docker compose down`? / Что сохраняется?**
 
-**What does depends_on guarantee? / Что гарантирует depends_on?**
+The named PostgreSQL volume survives container recreation. `down --volumes` deletes it deliberately. Нельзя менять BOOKING_SECRET при сохранении БД без понимания последствий: старые токены перестанут проходить проверку. Пароль уже созданной БД не меняется простым изменением .env.
 
-EN: With service_healthy, backend starts after the database healthcheck passes.
-It does not guarantee permanent availability, so connection errors return 503.
+**Why a healthcheck and depends_on? / Зачем healthcheck?**
 
-RU: Ожидание готовности при старте; база всё ещё может стать недоступной позже.
+A container being started does not mean the database is ready. pg_isready проверяет PostgreSQL; backend зависит от service_healthy. /health дополнительно выполняет SELECT 1. `--wait` ждёт здорового состояния сервисов.
 
-## Live modification / Изменение на защите
+**Where are secrets? / Где пароли?**
 
-- Change `APP_MESSAGE` in `.env`, run `docker compose up -d --force-recreate backend`,
-  then refresh the page. Explain why `restart` alone does not inject new environment values.
-- Add a simple `/api/version` GET route to `app.py` returning a JSON object, rebuild
-  with `docker compose up -d --build --wait`, and call it in Postman.
-- If port 8083 is busy, edit `APP_PORT`, recreate the backend, and update Postman's
-  `baseUrl`. The internal port stays 8000.
-- If you change the database password after first startup, explain that an existing
-  volume already has initialized credentials; changing `.env` does not run initialization again.
+Generated locally in ignored `.env`, passed to containers at runtime. В Git только .env.example с шаблонами. Приватное Postman-окружение тоже игнорируется Git; готовый ZIP с локальными настройками сдаётся отдельно. Docker build context исключает эти файлы; процесс запускается с UID 10001.
 
-Do not promise features that do not exist: this demo has no accounts,
-authentication or public hosting. The assignment requires backend and database
-containerization, documented CRUD and a working Postman Collection.
+**What would you improve for production? / Что дальше?**
+
+Account authentication, TLS, rate limiting, migrations, monitoring, backups, real inventory and payment integration. create_all создаёт фиксированную учебную схему, но не заменяет миграции. В демо нет multi-city, round trips, групповых пассажиров или временных holds.
+
+## Небольшое изменение на защите
+
+Пример: добавить фильтр `max_price` в `flights()` через `Query(default=None, gt=0)`, затем `filters.append(Flight.price_kzt <= max_price)`, обновить API.md и Postman. Другой пример: поменять багаж Standard в FARES и проверить ответ API и карточку тарифа. Бизнес-правила следует менять на сервере, не только в JS.

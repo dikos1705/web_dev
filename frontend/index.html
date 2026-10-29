@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#154beb"><meta name="description" content="Aeron: a flight booking demo built with FastAPI and PostgreSQL.">
+  <title>Aeron — A little further.</title>
+  <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="header wrap">
+    <a class="brand" href="/" aria-label="Aeron home"><img src="/static/mark.svg" alt="" width="34" height="34">aeron<span>®</span></a>
+    <nav aria-label="Main navigation"><button class="nav-link active" id="nav-search" type="button">Find a flight</button><button class="nav-link" id="nav-trips" type="button">My bookings <span id="trip-count" class="count" hidden>0</span></button></nav>
+    <div class="header-right"><span class="currency">KZT ₸</span><span class="demo-pill"><i></i>Booking demo</span></div>
+  </header>
+
+  <main>
+    <div id="search-view">
+      <section class="hero wrap">
+        <div class="hero-copy"><span class="eyebrow">YOUR NEXT CHAPTER, NONSTOP</span><h1>A little further.<br><span>A lot to discover.</span></h1><p>From familiar streets to somewhere completely new.<br>Find your next flight, and make it yours.</p><div class="hero-note"><span class="mini-plane">↗</span> One-way flights. Endless possibilities.</div></div>
+        <div class="sky-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="sky-label">ALA <span>— — — —</span> THE WORLD</span><img src="/static/aircraft.svg" alt=""><span class="cloud cloud-one"></span><span class="cloud cloud-two"></span><div class="art-label">A fresh perspective<br><strong>starts above the clouds.</strong></div><span class="flight-dot"></span></div>
+      </section>
+
+      <section class="search-panel wrap" aria-labelledby="search-heading">
+        <div class="search-top"><h2 id="search-heading">Where are we going?</h2><span>One way <span class="dot-separator">·</span> 1 passenger</span></div>
+        <form id="search-form" class="search-form">
+          <div class="search-field"><label for="origin">FROM</label><select id="origin" required aria-label="Departure airport"><option value="">Loading airports…</option></select><span class="field-hint" id="origin-hint">Departure airport</span></div>
+          <button class="swap" id="swap" type="button" aria-label="Swap departure and destination">⇄</button>
+          <div class="search-field"><label for="destination">TO</label><select id="destination" required aria-label="Destination airport"><option value="">Loading airports…</option></select><span class="field-hint" id="destination-hint">Arrival airport</span></div>
+          <div class="search-field date-field"><label for="departure-date">DEPARTURE</label><input type="date" id="departure-date" required><span class="field-hint">Make time for a new view</span></div>
+          <button class="primary search-button" id="search-button" type="submit">Search flights <span>↗</span></button>
+        </form>
+        <p id="search-error" class="inline-error" role="alert" hidden></p>
+      </section>
+
+      <section class="results-section wrap" aria-labelledby="results-heading">
+        <div class="section-heading"><div><span class="eyebrow" id="results-eyebrow">LET'S GET YOU THERE</span><h2 id="results-heading">Your next takeoff</h2><p id="results-meta" class="muted">Choose a route to explore available flights.</p></div><label class="sort-label">Sort by <select id="sort" aria-label="Sort flights"><option value="departure">Departure time</option><option value="price">Lowest price</option></select></label></div>
+        <div id="results" class="results" aria-live="polite"><div class="loading-state"><span class="spinner"></span> Finding your next adventure…</div></div>
+      </section>
+
+      <section class="discover-section wrap" aria-labelledby="discover-heading">
+        <div class="section-heading"><div><span class="eyebrow">A CHANGE OF SCENERY</span><h2 id="discover-heading">Closer than you think.</h2></div><span class="muted small">A few places to start dreaming.</span></div>
+        <div class="destination-grid">
+          <button class="destination-card astana" data-destination="NQZ" type="button"><span class="destination-icon skyline" aria-hidden="true">♜</span><span class="destination-code">NQZ</span><span class="destination-bottom"><strong>Astana</strong><span>A bold new perspective <b>↗</b></span></span></button>
+          <button class="destination-card dubai" data-destination="DXB" type="button"><span class="destination-icon" aria-hidden="true">☀</span><span class="destination-code">DXB</span><span class="destination-bottom"><strong>Dubai</strong><span>Find your golden hour <b>↗</b></span></span></button>
+          <button class="destination-card istanbul" data-destination="IST" type="button"><span class="destination-icon" aria-hidden="true">☾</span><span class="destination-code">IST</span><span class="destination-bottom"><strong>Istanbul</strong><span>Two worlds, one city <b>↗</b></span></span></button>
+        </div>
+      </section>
+      <section class="promise-strip wrap"><div><span>01</span><strong>Made for your kind of travel</strong><p>Three clear fares. Choose what you need.</p></div><div><span>02</span><strong>Your seat, your choice</strong><p>Pick a window, an aisle, or your favorite row.</p></div><div><span>03</span><strong>Plans change. We get it.</strong><p>Manage your reservation in one place.</p></div></section>
+    </div>
+
+    <section id="trips-view" class="trips-view wrap" hidden aria-labelledby="trips-heading"><span class="eyebrow">GOOD THINGS ON THE HORIZON</span><div class="section-heading"><div><h1 id="trips-heading">Your next chapters.</h1><p class="muted">Reservations created in this browser, all in one place.</p></div><button class="secondary" id="back-to-search" type="button">Find another flight ↗</button></div><div id="trips" aria-live="polite"></div></section>
+  </main>
+
+  <footer class="footer wrap"><a class="brand small-brand" href="/">aeron<span>®</span></a><p>A little further, together.</p><div class="footer-links"><a href="/docs" target="_blank" rel="noopener">API docs ↗</a><span>© Aeron · Dias · Web Development Midterm</span></div><p class="disclaimer">Educational demo with synthetic flights. No payment is taken and no real ticket is issued. Use sample passenger details.</p></footer>
+
+  <dialog id="booking-dialog" class="booking-dialog" aria-labelledby="booking-heading"><div class="dialog-heading"><div><span class="eyebrow">MAKE IT YOURS</span><h2 id="booking-heading">Your flight, your way.</h2></div><button class="icon-button" id="close-booking" aria-label="Close booking" type="button">×</button></div><div id="selected-flight" class="selected-flight"></div><form id="booking-form"><h3>01 <span>Choose your fare</span></h3><div id="fare-options" class="fare-options"></div><div class="booking-columns"><section class="seat-section"><h3>02 <span>Pick your favorite seat</span></h3><div class="seat-legend"><span><i class="available-key"></i>Available</span><span><i class="selected-key"></i>Selected</span><span><i class="taken-key"></i>Taken</span></div><div class="cabin"><div class="cabin-nose" aria-hidden="true">↗</div><div class="seat-letters"><span>A</span><span>B</span><i></i><span>C</span><span>D</span></div><div id="seat-map" class="seat-map" role="group" aria-label="Choose a seat"></div><span class="cabin-caption">24-seat demo cabin</span></div></section><section class="passenger-section"><h3>03 <span>Who's flying?</span></h3><label for="passenger-name">Full name</label><input id="passenger-name" minlength="2" maxlength="100" autocomplete="name" required placeholder="Alex Morgan"><label for="passenger-email">Email address</label><input type="email" id="passenger-email" maxlength="254" autocomplete="email" required placeholder="alex@example.com"><p class="field-note">Use sample details for this demo. No email will be sent.</p><div class="price-summary"><div><span id="summary-fare">Light fare</span><strong id="summary-price">—</strong></div><div><span>Selected seat</span><strong id="summary-seat">Choose a seat</strong></div><div class="summary-total"><span>Total per passenger</span><strong id="summary-total">—</strong></div></div><p id="booking-error" class="inline-error" role="alert" hidden></p><button class="primary book-button" id="confirm-booking" type="submit">Confirm reservation <span>↗</span></button><span class="secure-note">Demo reservation · No payment required</span></section></div></form></dialog>
+
+  <dialog id="confirmation-dialog" class="confirmation-dialog" aria-labelledby="confirmation-heading"><button class="icon-button confirmation-close" id="close-confirmation" aria-label="Close confirmation" type="button">×</button><div class="success-mark">✓</div><span class="eyebrow">A NEW CHAPTER AWAITS</span><h2 id="confirmation-heading">You're all set.</h2><p class="muted">Your demo reservation is confirmed.</p><div id="confirmation-ticket"></div><div class="confirmation-actions"><button class="primary" id="show-my-bookings" type="button">View my booking ↗</button><button class="secondary" id="download-confirmation" type="button">Download itinerary</button></div><p class="small muted">This demo does not issue a real airline ticket.</p></dialog>
+
+  <dialog id="action-dialog" class="action-dialog" aria-labelledby="action-heading"><h2 id="action-heading">Cancel this reservation?</h2><p id="action-description" class="muted">Your seat will become available to other travelers.</p><div class="dialog-actions"><button class="secondary" id="action-no" type="button">Keep reservation</button><button class="danger" id="action-yes" type="button">Cancel reservation</button></div></dialog>
+
+  <dialog id="edit-dialog" class="edit-dialog" aria-labelledby="edit-heading"><div class="dialog-heading"><h2 id="edit-heading">Passenger details</h2><button type="button" id="close-edit" class="icon-button" aria-label="Close passenger editor">×</button></div><form id="edit-form"><label for="edit-name">Full name</label><input id="edit-name" minlength="2" maxlength="100" required><label for="edit-email">Email address</label><input type="email" id="edit-email" maxlength="254" required><p id="edit-error" class="inline-error" role="alert" hidden></p><button class="primary" type="submit" id="save-details">Save changes</button></form></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body></html>

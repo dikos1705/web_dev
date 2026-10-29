@@ -1,44 +1,48 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
-    "title": "Dayboard API",
-    "version": "1.0.0",
-    "description": "Web Development Midterm by Dias. Local educational task board. No authentication; bind only to localhost. POST defaults: priority=medium, completed=false. PATCH preserves omitted fields; PUT requires all three fields. Null and unknown task fields are rejected."
+    "title": "Aeron Flight Booking API",
+    "description": "Educational flight reservations with synthetic inventory. No payment is taken and no real ticket is issued. Flight writes and booking lists require X-Admin-Key. Booking management requires the X-Booking-Token returned on creation.",
+    "version": "1.0.0"
   },
-  "servers": [
-    {
-      "url": "http://localhost:8083"
-    }
-  ],
   "paths": {
     "/health": {
       "get": {
-        "summary": "Check application and database readiness",
+        "tags": [
+          "System"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
         "responses": {
           "200": {
-            "description": "Check application and database readiness",
+            "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "database": {
-                      "type": "string"
-                    }
-                  }
-                }
+                "schema": {}
               }
             }
-          },
-          "503": {
-            "description": "Database temporarily unavailable",
+          }
+        }
+      }
+    },
+    "/api/airports": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Airports",
+        "operationId": "airports_api_airports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "items": {
+                    "$ref": "#/components/schemas/AirportOut"
+                  },
+                  "type": "array",
+                  "title": "Response Airports Api Airports Get"
                 }
               }
             }
@@ -46,247 +50,203 @@
         }
       }
     },
-    "/api/info": {
+    "/api/flights": {
       "get": {
-        "summary": "Read application configuration",
-        "responses": {
-          "200": {
-            "description": "Read application configuration",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "port": {
-                      "type": "integer"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Database temporarily unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/tasks": {
-      "get": {
-        "summary": "List tasks; open first, then newest ID",
-        "responses": {
-          "200": {
-            "description": "List tasks; open first, then newest ID",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "tasks"
-                  ],
-                  "properties": {
-                    "tasks": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Task"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Database temporarily unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid JSON body, fields or query parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
+        "tags": [
+          "Flights"
+        ],
+        "summary": "Flights",
+        "operationId": "flights_api_flights_get",
         "parameters": [
           {
+            "name": "origin",
             "in": "query",
-            "name": "completed",
             "required": false,
             "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Origin"
             }
           },
           {
+            "name": "destination",
             "in": "query",
-            "name": "priority",
             "required": false,
             "schema": {
-              "type": "string",
-              "enum": [
-                "low",
-                "medium",
-                "high"
-              ]
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Destination"
             }
           },
           {
+            "name": "departure_date",
             "in": "query",
-            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Departure Date"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 120
+              "pattern": "^(departure|price)$",
+              "default": "departure",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       },
       "post": {
-        "summary": "Create a task",
-        "responses": {
-          "201": {
-            "description": "Create a task",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Task"
-                }
-              }
-            },
-            "headers": {
-              "Location": {
-                "description": "Relative URL of the new task",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Database temporarily unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid JSON body, fields or query parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request body exceeds 16 KiB",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "JSON Content-Type required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+        "tags": [
+          "Admin flights"
+        ],
+        "summary": "Add Flight",
+        "operationId": "add_flight_api_flights_post",
+        "security": [
+          {
+            "APIKeyHeader": []
           }
-        },
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTask"
+                "$ref": "#/components/schemas/FlightInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
         }
       }
     },
-    "/api/tasks/{id}": {
-      "parameters": [
-        {
-          "in": "path",
-          "name": "id",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
-          }
-        }
-      ],
+    "/api/flights/{flight_id}": {
       "get": {
-        "summary": "Get one task",
+        "tags": [
+          "Flights"
+        ],
+        "summary": "Flight By Id",
+        "operationId": "flight_by_id_api_flights__flight_id__get",
+        "parameters": [
+          {
+            "name": "flight_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Flight Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Get one task",
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Task"
+                  "$ref": "#/components/schemas/FlightOut"
                 }
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Task or route not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -294,177 +254,92 @@
         }
       },
       "put": {
-        "summary": "Replace every editable task field",
-        "responses": {
-          "200": {
-            "description": "Replace every editable task field",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Task"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Database temporarily unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Task or route not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid JSON body, fields or query parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request body exceeds 16 KiB",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "JSON Content-Type required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
+        "tags": [
+          "Admin flights"
+        ],
+        "summary": "Replace Flight",
+        "operationId": "replace_flight_api_flights__flight_id__put",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "flight_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Flight Id"
             }
           }
-        },
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReplaceTask"
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "summary": "Update one or more task fields",
-        "responses": {
-          "200": {
-            "description": "Update one or more task fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Task"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Database temporarily unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Task or route not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid JSON body, fields or query parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request body exceeds 16 KiB",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "JSON Content-Type required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
+                "$ref": "#/components/schemas/FlightInput"
               }
             }
           }
         },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatchTask"
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
         }
       },
       "delete": {
-        "summary": "Delete a task; empty response body",
+        "tags": [
+          "Admin flights"
+        ],
+        "summary": "Delete Flight",
+        "operationId": "delete_flight_api_flights__flight_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "flight_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Flight Id"
+            }
+          }
+        ],
         "responses": {
           "204": {
-            "description": "Delete a task; empty response body"
+            "description": "Successful Response"
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Task or route not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -472,26 +347,39 @@
         }
       }
     },
-    "/api/stats": {
+    "/api/flights/{flight_id}/seats": {
       "get": {
-        "summary": "Read live statistics for all tasks",
+        "tags": [
+          "Flights"
+        ],
+        "summary": "Seats",
+        "operationId": "seats_api_flights__flight_id__seats_get",
+        "parameters": [
+          {
+            "name": "flight_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Flight Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Read live statistics for all tasks",
+            "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Stats"
-                }
+                "schema": {}
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -499,26 +387,394 @@
         }
       }
     },
-    "/api/openapi.json": {
-      "get": {
-        "summary": "Download this OpenAPI specification",
+    "/api/bookings": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Book",
+        "operationId": "book_api_bookings_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingCreate"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {
-            "description": "Download this OpenAPI specification",
+          "201": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/BookingReceipt"
                 }
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin bookings"
+        ],
+        "summary": "List Bookings",
+        "operationId": "list_bookings_api_bookings_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bookings/{booking_id}": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Booking By Id",
+        "operationId": "booking_by_id_api_bookings__booking_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Booking Replace",
+        "operationId": "booking_replace_api_bookings__booking_id__put",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingReplace"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Booking Patch",
+        "operationId": "booking_patch_api_bookings__booking_id__patch",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Delete Booking",
+        "operationId": "delete_booking_api_bookings__booking_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bookings/{booking_id}/cancel": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Cancel Booking",
+        "operationId": "cancel_booking_api_bookings__booking_id__cancel_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bookings/{booking_id}/itinerary": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Itinerary",
+        "operationId": "itinerary_api_bookings__booking_id__itinerary_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -529,159 +785,572 @@
   },
   "components": {
     "schemas": {
-      "Task": {
+      "AirportOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          }
+        },
         "type": "object",
         "required": [
-          "id",
-          "title",
-          "priority",
-          "completed",
-          "created_at"
+          "code",
+          "city",
+          "name",
+          "country",
+          "timezone"
         ],
+        "title": "AirportOut"
+      },
+      "BookingCreate": {
         "properties": {
-          "id": {
+          "flight_id": {
             "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
+            "exclusiveMinimum": 0.0,
+            "title": "Flight Id"
           },
-          "title": {
+          "seat": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 120,
-            "description": "Trimmed; whitespace-only titles are rejected."
+            "pattern": "^[1-6][A-D]$",
+            "title": "Seat"
           },
-          "priority": {
+          "fare": {
             "type": "string",
             "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
+              "light",
+              "standard",
+              "flex"
+            ],
+            "title": "Fare",
+            "default": "light"
           },
-          "completed": {
-            "type": "boolean"
+          "passenger_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Passenger Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "request_key": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "flight_id",
+          "seat",
+          "passenger_name",
+          "email",
+          "request_key"
+        ],
+        "title": "BookingCreate"
+      },
+      "BookingList": {
+        "properties": {
+          "bookings": {
+            "items": {
+              "$ref": "#/components/schemas/BookingOut"
+            },
+            "type": "array",
+            "title": "Bookings"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bookings",
+          "total"
+        ],
+        "title": "BookingList"
+      },
+      "BookingOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "flight": {
+            "$ref": "#/components/schemas/FlightOut"
+          },
+          "seat": {
+            "type": "string",
+            "title": "Seat"
+          },
+          "fare": {
+            "type": "string",
+            "enum": [
+              "light",
+              "standard",
+              "flex"
+            ],
+            "title": "Fare"
+          },
+          "passenger_name": {
+            "type": "string",
+            "title": "Passenger Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "total_kzt": {
+            "type": "integer",
+            "title": "Total Kzt"
+          },
+          "currency": {
+            "type": "string",
+            "const": "KZT",
+            "title": "Currency",
+            "default": "KZT"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "cancelled"
+            ],
+            "title": "Status"
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "title": "Created At"
           }
-        }
-      },
-      "CreateTask": {
+        },
         "type": "object",
         "required": [
-          "title"
+          "id",
+          "reference",
+          "flight",
+          "seat",
+          "fare",
+          "passenger_name",
+          "email",
+          "total_kzt",
+          "status",
+          "created_at"
         ],
-        "additionalProperties": false,
+        "title": "BookingOut"
+      },
+      "BookingPatch": {
         "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120,
-            "description": "Trimmed; whitespace-only titles are rejected."
+          "passenger_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passenger Name"
           },
-          "priority": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "seat": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[1-6][A-D]$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BookingPatch"
+      },
+      "BookingReceipt": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "flight": {
+            "$ref": "#/components/schemas/FlightOut"
+          },
+          "seat": {
+            "type": "string",
+            "title": "Seat"
+          },
+          "fare": {
             "type": "string",
             "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
+              "light",
+              "standard",
+              "flex"
+            ],
+            "title": "Fare"
           },
-          "completed": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ReplaceTask": {
-        "type": "object",
-        "required": [
-          "title",
-          "priority",
-          "completed"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "title": {
+          "passenger_name": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 120,
-            "description": "Trimmed; whitespace-only titles are rejected."
+            "title": "Passenger Name"
           },
-          "priority": {
+          "email": {
             "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
+            "format": "email",
+            "title": "Email"
           },
-          "completed": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PatchTask": {
-        "type": "object",
-        "minProperties": 1,
-        "additionalProperties": false,
-        "properties": {
-          "title": {
+          "total_kzt": {
+            "type": "integer",
+            "title": "Total Kzt"
+          },
+          "currency": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 120,
-            "description": "Trimmed; whitespace-only titles are rejected."
+            "const": "KZT",
+            "title": "Currency",
+            "default": "KZT"
           },
-          "priority": {
+          "status": {
             "type": "string",
             "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
+              "confirmed",
+              "cancelled"
+            ],
+            "title": "Status"
           },
-          "completed": {
-            "type": "boolean"
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "manage_token": {
+            "type": "string",
+            "title": "Manage Token"
           }
-        }
-      },
-      "Error": {
+        },
         "type": "object",
         "required": [
-          "error"
+          "id",
+          "reference",
+          "flight",
+          "seat",
+          "fare",
+          "passenger_name",
+          "email",
+          "total_kzt",
+          "status",
+          "created_at",
+          "manage_token"
         ],
-        "properties": {
-          "error": {
-            "type": "string"
-          }
-        }
+        "title": "BookingReceipt"
       },
-      "Stats": {
+      "BookingReplace": {
+        "properties": {
+          "passenger_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Passenger Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          }
+        },
+        "additionalProperties": false,
         "type": "object",
         "required": [
-          "total",
-          "completed",
-          "remaining",
-          "urgent"
+          "passenger_name",
+          "email"
         ],
+        "title": "BookingReplace"
+      },
+      "FareOut": {
         "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "light",
+              "standard",
+              "flex"
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "price_kzt": {
+            "type": "integer",
+            "title": "Price Kzt"
+          },
+          "cabin_bag_kg": {
+            "type": "integer",
+            "title": "Cabin Bag Kg"
+          },
+          "checked_bag_kg": {
+            "type": "integer",
+            "title": "Checked Bag Kg"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "price_kzt",
+          "cabin_bag_kg",
+          "checked_bag_kg",
+          "description"
+        ],
+        "title": "FareOut"
+      },
+      "FlightInput": {
+        "properties": {
+          "number": {
+            "type": "string",
+            "pattern": "^AE\\d{3,4}$",
+            "title": "Number"
+          },
+          "origin_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Origin Code"
+          },
+          "destination_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Destination Code"
+          },
+          "departure_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Departure At"
+          },
+          "arrival_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Arrival At"
+          },
+          "price_kzt": {
+            "type": "integer",
+            "maximum": 5000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Price Kzt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "origin_code",
+          "destination_code",
+          "departure_at",
+          "arrival_at",
+          "price_kzt"
+        ],
+        "title": "FlightInput"
+      },
+      "FlightList": {
+        "properties": {
+          "flights": {
+            "items": {
+              "$ref": "#/components/schemas/FlightOut"
+            },
+            "type": "array",
+            "title": "Flights"
+          },
           "total": {
             "type": "integer",
-            "minimum": 0
-          },
-          "completed": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "remaining": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "urgent": {
-            "type": "integer",
-            "minimum": 0
+            "title": "Total"
           }
-        }
+        },
+        "type": "object",
+        "required": [
+          "flights",
+          "total"
+        ],
+        "title": "FlightList"
+      },
+      "FlightOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/AirportOut"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/AirportOut"
+          },
+          "departure_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Departure At"
+          },
+          "arrival_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Arrival At"
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "title": "Duration Minutes"
+          },
+          "price_kzt": {
+            "type": "integer",
+            "title": "Price Kzt"
+          },
+          "currency": {
+            "type": "string",
+            "const": "KZT",
+            "title": "Currency",
+            "default": "KZT"
+          },
+          "available_seats": {
+            "type": "integer",
+            "title": "Available Seats"
+          },
+          "total_seats": {
+            "type": "integer",
+            "title": "Total Seats",
+            "default": 24
+          },
+          "fares": {
+            "items": {
+              "$ref": "#/components/schemas/FareOut"
+            },
+            "type": "array",
+            "title": "Fares"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "origin",
+          "destination",
+          "departure_at",
+          "arrival_at",
+          "duration_minutes",
+          "price_kzt",
+          "available_seats",
+          "fares"
+        ],
+        "title": "FlightOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Booking-Token"
       }
     }
   }

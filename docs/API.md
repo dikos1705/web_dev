@@ -1,164 +1,116 @@
-# Dayboard REST API
+# Aeron API reference
 
-Base URL: `http://localhost:8083`. All API request/response bodies are JSON unless
-specified. No authentication is required for this local educational application.
-The backend is bound to localhost; this is not a public multi-user deployment.
+Base URL: `http://localhost:8083`. JSON request/response bodies unless stated otherwise. Live interactive specification: `/docs`; ReDoc: `/redoc`; OpenAPI: `/openapi.json`. All IDs and samples represent synthetic data.
 
-The machine-readable [OpenAPI 3 specification](openapi.json) is also served at
-`GET /api/openapi.json`. Import it into Postman if desired; the exported,
-ready-to-run collection is in `postman/`.
+## Authentication
 
-## Resource: Task
+Public: health, airports, flight search/details/seats and creation of a reservation.
+
+- Admin routes: `X-Admin-Key: <ADMIN_API_KEY from local .env>`.
+- Booking-specific routes: `X-Booking-Token: <manage_token returned at creation>`.
+- Missing or incorrect keys return **401**. An admin key does not substitute for a booking token.
+- Management token and private `request_key` are not URL parameters. Do not share them. Booking responses use `Cache-Control: no-store`. Admin lists never include management tokens.
+
+## Endpoints
+
+| Method | Path | Access | Success and behavior |
+|---|---|---|---|
+| GET | `/` | Public | 200 browser app (HTML) |
+| GET | `/static/{asset}` | Public | 200 CSS, JavaScript or SVG |
+| GET | `/health` | Public | 200 database connectivity; 503 if unavailable |
+| GET | `/docs` | Public | 200 Swagger UI |
+| GET | `/redoc` | Public | 200 ReDoc |
+| GET | `/openapi.json` | Public | 200 generated API contract |
+| GET | `/api/airports` | Public | 200 array of airport records |
+| GET | `/api/flights` | Public | 200 `{flights: [...], total: n}` |
+| GET | `/api/flights/{id}` | Public | 200 flight or 404 |
+| GET | `/api/flights/{id}/seats` | Public | 200 seat map or 404 |
+| POST | `/api/flights` | Admin | 201 created flight; 409 duplicate flight number/departure |
+| PUT | `/api/flights/{id}` | Admin | 200 full flight replacement; 409 if booking history exists |
+| DELETE | `/api/flights/{id}` | Admin | 204 empty body; 409 if booking history exists |
+| POST | `/api/bookings` | Public | 201 created reservation + token; 200 exact retry |
+| GET | `/api/bookings` | Admin | 200 `{bookings: [...], total: n}` |
+| GET | `/api/bookings/{uuid}` | Owner token | 200 reservation or 404 |
+| PUT | `/api/bookings/{uuid}` | Owner token | 200 replace passenger name and email |
+| PATCH | `/api/bookings/{uuid}` | Owner token | 200 change supplied name/email/seat fields |
+| POST | `/api/bookings/{uuid}/cancel` | Owner token | 200 cancelled reservation; repeat is safe |
+| DELETE | `/api/bookings/{uuid}` | Owner token | 204 empty body; requires cancelled status |
+| GET | `/api/bookings/{uuid}/itinerary` | Owner token | 200 downloadable UTF-8 text itinerary |
+
+All missing resources return 404 after authorization where applicable. Invalid path IDs or bodies return 422. Integrity conflicts return 409. Database availability errors return 503. Unexpected properties in input JSON are rejected (422), rather than silently accepted. Successful deletes have no JSON body.
+
+## Airport and search
+
+Airport fields: `code`, `city`, `name`, `country`, IANA `timezone`. Supported codes: ALA, NQZ, CIT, SCO, DXB, IST.
+
+`GET /api/flights?origin=ALA&destination=NQZ&departure_date=2026-10-30&sort=price&limit=10&offset=0`
+
+All parameters optional. `origin` and `destination` are uppercase known IATA codes; when both are supplied, they must differ. Date format: YYYY-MM-DD, interpreted in the origin airport's timezone (Asia/Almaty if no origin filter). Only future departures are listed. The example date must be replaced with a date in the current demo horizon. `sort`: `departure` (default) or `price`. `limit`: 1–100, default 100; `offset`: nonnegative, default 0. Total counts records matching filters before pagination. Price ordering uses departure as a secondary sort; departure ordering uses ID to break ties.
+
+Flight response: `id`, `number`, nested `origin` and `destination` airport objects, `departure_at`, `arrival_at` (timezone-aware), `duration_minutes`, `price_kzt`, `currency: "KZT"`, `available_seats`, `total_seats: 24`, `fares`. Seat response: `{flight_id, seats: [{label: "1A", available: true}, ...]}`. Rows 1–6, columns A/B/C/D; the GUI places an aisle between B and C. A snapshot of availability does not reserve a seat.
+
+## Flight writes
+
+POST and PUT use the same complete body:
 
 ```json
 {
-  "id": 1,
-  "title": "Prepare the Docker demonstration",
-  "priority": "high",
-  "completed": false,
-  "created_at": "2026-10-29T10:00:00Z"
+  "number": "AE9999",
+  "origin_code": "ALA",
+  "destination_code": "NQZ",
+  "departure_at": "2030-10-30T07:00:00+05:00",
+  "arrival_at": "2030-10-30T08:40:00+05:00",
+  "price_kzt": 40000
 }
 ```
 
-| Field | Rules |
-| --- | --- |
-| `id` | Server-generated positive integer; immutable |
-| `title` | String, 1-120 characters after trimming; whitespace-only rejected |
-| `priority` | `low`, `medium`, or `high` |
-| `completed` | JSON boolean, not a string or number |
-| `created_at` | Server-generated UTC ISO 8601 timestamp; immutable |
+Number: `AE` followed by 3–4 digits. Airports must exist and differ. Departure must be in the future, arrival later than departure, both timezone-aware. Price must be an integer in 1–5,000,000 KZT (booleans/fractions/strings rejected). Flight number plus departure timestamp is unique. PUT requires every field. PUT/DELETE refuse to alter a flight with any confirmed **or cancelled** booking history; cancel then delete the associated reservations first.
 
-Unknown task fields and explicit `null` field values are rejected. SQL values
-are passed as parameters, not interpolated into SQL strings.
-
-## Endpoint overview
-
-| Method | Path | Purpose | Success |
-| --- | --- | --- | --- |
-| GET | `/api/tasks` | List and optionally filter tasks | 200 |
-| GET | `/api/tasks/{id}` | Read one task | 200 |
-| POST | `/api/tasks` | Create a task | 201 |
-| PUT | `/api/tasks/{id}` | Replace all editable fields | 200 |
-| PATCH | `/api/tasks/{id}` | Change selected fields | 200 |
-| DELETE | `/api/tasks/{id}` | Delete a task | 204, empty body |
-| GET | `/api/stats` | Count all tasks and priorities | 200 |
-| GET | `/api/info` | Read app name, version, heading and container port | 200 |
-| GET | `/health` | Check application and database connection | 200 |
-| GET | `/api/openapi.json` | Download API specification | 200 |
-| GET | `/` | Optional HTML task board | 200, HTML |
-
-### List and filter
-
-`GET /api/tasks` returns `{"tasks": [...]}`. Open tasks come first; within each
-status tasks are sorted by ID descending. An empty list returns 200.
-
-Optional filters can be combined (AND):
-
-- `completed=true` or `completed=false` (lowercase literal strings).
-- `priority=low`, `priority=medium`, or `priority=high`.
-- `q=reading`: case-insensitive literal substring of title, 1-120 trimmed
-  characters. Percent and underscore are literal search characters.
-
-Example: `/api/tasks?completed=false&priority=high&q=Docker`.
-Invalid or unknown query parameters return 400. Statistics always describe the
-entire database, irrespective of these filters.
-
-### Create
-
-```http
-POST /api/tasks
-Content-Type: application/json
-
-{"title":"Prepare the Docker demonstration","priority":"high"}
-```
-
-Only `title` is required. Defaults: `priority=medium`, `completed=false`.
-Success returns the new task with status 201 and
-`Location: /api/tasks/{new_id}`. IDs are generated by PostgreSQL.
-
-### Get by ID
-
-`GET /api/tasks/1` returns a task object. An absent/deleted task returns 404.
-IDs outside the database integer range also return 404.
-
-### Replace (PUT)
-
-```http
-PUT /api/tasks/1
-Content-Type: application/json
-
-{"title":"Demonstrate all CRUD endpoints","priority":"medium","completed":false}
-```
-
-All three editable fields are required. ID and creation timestamp stay the same.
-PUT does not create a missing task; it returns 404. Missing fields return 400.
-
-### Partial update (PATCH)
-
-```http
-PATCH /api/tasks/1
-Content-Type: application/json
-
-{"completed":true}
-```
-
-At least one editable field is required. Other fields retain their stored value.
-For example, `{"title":"Revised title","priority":"low"}` is also valid.
-
-### Delete
-
-`DELETE /api/tasks/1` returns 204 with no response body. Repeating the request or
-getting the deleted task returns 404. The Postman run demonstrates this.
-
-### Statistics and operational endpoints
-
-`GET /api/stats` example:
+## Create and safely retry a reservation
 
 ```json
-{"total":4,"completed":1,"remaining":3,"urgent":2}
+{
+  "flight_id": 1,
+  "seat": "2A",
+  "fare": "standard",
+  "passenger_name": "Alex Morgan",
+  "email": "alex@example.com",
+  "request_key": "8c29fd81-721a-463f-827e-93c92abf9500"
+}
 ```
 
-`urgent` counts incomplete high-priority tasks. `total = completed + remaining`.
-`GET /health` returns `{"status":"ok","database":"connected"}` after a real
-`SELECT 1`. `GET /api/info` reads `APP_MESSAGE`; `port` is the container's 8000,
-not the host's published 8083.
+Use an actual future flight ID and a newly generated UUID for each new booking intent. `flight_id` is a positive integer. Fare is `light` (default), `standard` or `flex`. Name length 2–100 after trimming; email must be valid. Seat matches `^[1-6][A-D]$`.
 
-## Errors
+201 returns `id` (UUID), eight-character `reference`, full `flight`, `seat`, `fare`, `passenger_name`, `email`, `total_kzt`, `currency`, `status: "confirmed"`, `created_at` and **`manage_token`**. `Location` points to the booking endpoint. Save ID and token privately. Token is omitted from ordinary GET/list responses.
 
-Errors use `{"error":"A human-readable explanation"}`.
+Server calculates price from the stored flight: Light 100%, Standard 125%, Flex 150%, rounded **up** to whole KZT using integer arithmetic. Cabin/checked baggage: Light 7/0 kg, Standard 7/23 kg, Flex 10/32 kg. All three fares permit cancellation in this demo; none charges a fee or initiates a refund.
 
-| HTTP status | Meaning / example |
-| --- | --- |
-| 400 | Invalid JSON, empty title, bad priority, wrong boolean type, unknown field, empty PATCH, incomplete PUT, invalid filter |
-| 404 | Missing task or route |
-| 405 | Unsupported method for an existing route |
-| 413 | Request body exceeds 16 KiB |
-| 415 | A write request does not use JSON Content-Type |
-| 503 | Database unavailable; connection details are not exposed |
+**Retry semantics:** send exactly the same normalized payload and `request_key` after a transport error. Response is 200 with the original reservation and token; no second seat is consumed. A reused key with different details returns 409. A replay after cancellation returns the existing cancelled record; it does not reactivate it. Deleting the record removes its replay history, so do not reuse an old key after deletion. Keep the key private because an exact replay recovers management access.
 
-An HTTP 204 response must not be parsed as JSON. An HTTP 400/404 in a negative
-Postman test is the expected result, not a failing test.
+Booking an occupied seat or an already-departed flight returns 409. A flight row lock serializes inventory changes; a partial unique PostgreSQL index additionally enforces one confirmed booking per flight/seat. Confirmed inventory is permanent until cancellation, with no timed holds in this demo.
 
-## Postman demonstration
+## Manage a reservation
 
-1. Import `postman/Dayboard.postman_collection.json`.
-2. Optionally import `postman/Dayboard.local.postman_environment.json` and select
-   **Dayboard local**. Both use `http://localhost:8083` by default.
-3. Choose **Run collection**, preserve request order, run all 17 requests.
-4. Request 04 stores the created ID in the collection variable `taskId`; later
-   requests reuse it. Request 14 deletes only that created task.
-5. To send requests individually, first send request 04. To use another port,
-   update `baseUrl` in the selected environment (or collection when none is selected).
+Send the owner header on every request. PUT replaces both contact fields:
 
-From Docker, run the same collection without installing Node.js or Postman:
-
-```sh
-docker compose --profile tools run --rm postman
+```json
+{"passenger_name": "Alex Taylor", "email": "taylor@example.com"}
 ```
 
-The runner uses `http://backend:8000` through the same Compose network. The
-optional `postman` service is excluded from normal `docker compose up`.
+PATCH accepts any nonempty subset of `passenger_name`, `email`, `seat`:
 
-References for the exported format and runner:
-[Postman collection schemas](https://schema.postman.com/),
-[official Newman Docker instructions](https://learning.postman.com/latest-v-12/docs/reference/newman-cli/newman-with-docker).
+```json
+{"seat": "2D"}
+```
+
+Explicit nulls and unknown fields return 422. Flight and fare cannot be changed. Updates require a confirmed booking and a future departure (409 otherwise). Changing to an occupied seat returns 409; the old seat remains reserved because the transaction rolls back. An accepted change releases the old seat and keeps the original price/token/reference.
+
+Cancellation uses POST with no body. Status becomes `cancelled` and inventory is released in the same transaction; repeating it returns the cancelled reservation. DELETE is permitted only after cancellation and permanently removes that record. A valid token for a deleted record returns 404. Itinerary is a text attachment with passenger, route, UTC departure, seat, fare, amount, status and demo disclosure; no email or actual ticket is sent.
+
+Admin booking list: `limit` 1–100 (default 25), `offset` nonnegative (default 0), newest records first; no tokens or request keys are exposed.
+
+## Error shape
+
+Business/auth/not-found errors: `{"detail": "This seat was just booked. Please choose another seat."}`. Validation errors use FastAPI's `detail` array with `loc`, `msg`, `type` and optional context. Clients should inspect status + detail, not depend on an exact English message. 422 means the request violates the API contract; 409 means a valid request conflicts with current state.
+
+The runnable exported Postman collection covers every domain endpoint, both update methods, authorization failures, seat conflict, idempotency, cancellation and deletion. It uses its own future test flight and removes it at the end.

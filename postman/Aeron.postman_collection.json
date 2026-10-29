@@ -1,0 +1,808 @@
+{
+  "info": {
+    "name": "Aeron — Flight Booking API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Synthetic flight reservation lifecycle. Run the whole collection in order. It creates and removes its own flight and booking. Requires baseUrl and local adminKey. No real tickets or payments."
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": "Health. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Database connected\", () => pm.expect(pm.response.json().database).to.eql(\"connected\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Airports",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/airports",
+        "description": "Airports. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Six airports\", () => pm.expect(pm.response.json()).to.have.lengthOf(6));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search route and sort",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/flights?origin=ALA&destination=NQZ&sort=price&limit=2",
+        "description": "Search route and sort. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Search results\", () => pm.expect(pm.response.json().total).to.be.at.least(3));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reject invalid search",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/flights?origin=ALA&destination=ALA",
+        "description": "Reject invalid search. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protect admin writes",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/flights",
+        "description": "Protect admin writes. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"number\": \"AE9999\",\n  \"origin_code\": \"ALA\",\n  \"destination_code\": \"NQZ\",\n  \"departure_at\": \"{{departure}}\",\n  \"arrival_at\": \"{{arrival}}\",\n  \"price_kzt\": 40000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set(\"departure\", new Date(Date.now()+40*86400000).toISOString());",
+              "pm.environment.set(\"arrival\", new Date(Date.now()+40*86400000+6000000).toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create flight",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Admin-Key",
+            "value": "{{adminKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/flights",
+        "description": "Create flight. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"number\": \"AE9999\",\n  \"origin_code\": \"ALA\",\n  \"destination_code\": \"NQZ\",\n  \"departure_at\": \"{{departure}}\",\n  \"arrival_at\": \"{{arrival}}\",\n  \"price_kzt\": 40000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const t=Date.now()+40*86400000;",
+              "pm.environment.set(\"departure\",new Date(t).toISOString());",
+              "pm.environment.set(\"arrival\",new Date(t+6000000).toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.environment.set(\"flightId\", pm.response.json().id);",
+              "pm.test(\"Empty cabin\", () => pm.expect(pm.response.json().available_seats).to.eql(24));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get flight",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/flights/{{flightId}}",
+        "description": "Get flight. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update flight",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Admin-Key",
+            "value": "{{adminKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/flights/{{flightId}}",
+        "description": "Update flight. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"number\": \"AE9999\",\n  \"origin_code\": \"ALA\",\n  \"destination_code\": \"NQZ\",\n  \"departure_at\": \"{{departure}}\",\n  \"arrival_at\": \"{{arrival}}\",\n  \"price_kzt\": 42000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Updated price\", () => pm.expect(pm.response.json().price_kzt).to.eql(42000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seat map",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/flights/{{flightId}}/seats",
+        "description": "Seat map. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"24 seats\", () => pm.expect(pm.response.json().seats).to.have.lengthOf(24));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create reservation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings",
+        "description": "Create reservation. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"flight_id\": {{flightId}},\n  \"seat\": \"1A\",\n  \"fare\": \"standard\",\n  \"passenger_name\": \"Alex Morgan\",\n  \"email\": \"alex@example.com\",\n  \"request_key\": \"{{requestKey}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set(\"requestKey\",pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "const b=pm.response.json();",
+              "pm.environment.set(\"bookingId\",b.id);",
+              "pm.environment.set(\"bookingToken\",b.manage_token);",
+              "pm.test(\"Server computes fare\",()=>pm.expect(b.total_kzt).to.eql(52500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Safe retry returns same reservation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings",
+        "description": "Safe retry returns same reservation. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"flight_id\": {{flightId}},\n  \"seat\": \"1A\",\n  \"fare\": \"standard\",\n  \"passenger_name\": \"Alex Morgan\",\n  \"email\": \"alex@example.com\",\n  \"request_key\": \"{{requestKey}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Same booking\",()=>pm.expect(pm.response.json().id).to.eql(pm.environment.get(\"bookingId\")));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reject competing reservation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings",
+        "description": "Reject competing reservation. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"flight_id\": {{flightId}},\n  \"seat\": \"1A\",\n  \"fare\": \"standard\",\n  \"passenger_name\": \"Alex Morgan\",\n  \"email\": \"alex@example.com\",\n  \"request_key\": \"{{$guid}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protect booking privacy",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+        "description": "Protect booking privacy. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get own reservation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+        "description": "Get own reservation. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List reservations as admin",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Admin-Key",
+            "value": "{{adminKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings?limit=10",
+        "description": "List reservations as admin. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"No management tokens in list\",()=>pm.expect(pm.response.text()).not.to.include(\"manage_token\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Replace passenger details",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+        "description": "Replace passenger details. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"passenger_name\": \"Alex Taylor\",\n  \"email\": \"taylor@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Change seat",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+        "description": "Change seat. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"seat\": \"2D\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"New seat\",()=>pm.expect(pm.response.json().seat).to.eql(\"2D\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Download itinerary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}/itinerary",
+        "description": "Download itinerary. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Demo disclosure\",()=>pm.expect(pm.response.text()).to.include(\"not a real ticket\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Do not delete active reservation",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+        "description": "Do not delete active reservation. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protect flight with booking history",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Admin-Key",
+            "value": "{{adminKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/flights/{{flightId}}",
+        "description": "Protect flight with booking history. See docs/API.md for invariants and error responses.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"number\": \"AE9999\",\n  \"origin_code\": \"ALA\",\n  \"destination_code\": \"NQZ\",\n  \"departure_at\": \"{{departure}}\",\n  \"arrival_at\": \"{{arrival}}\",\n  \"price_kzt\": 40000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cancel and release seat",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
+        "description": "Cancel and release seat. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Cancelled\",()=>pm.expect(pm.response.json().status).to.eql(\"cancelled\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cancellation is idempotent",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
+        "description": "Cancellation is idempotent. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify released inventory",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/flights/{{flightId}}",
+        "description": "Verify released inventory. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"All seats available\",()=>pm.expect(pm.response.json().available_seats).to.eql(24));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete cancelled reservation",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+        "description": "Delete cancelled reservation. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify reservation removed",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Booking-Token",
+            "value": "{{bookingToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+        "description": "Verify reservation removed. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete test flight",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-Admin-Key",
+            "value": "{{adminKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/flights/{{flightId}}",
+        "description": "Delete test flight. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify flight removed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/flights/{{flightId}}",
+        "description": "Verify flight removed. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "OpenAPI contract",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/openapi.json",
+        "description": "OpenAPI contract. See docs/API.md for invariants and error responses."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Aeron contract\",()=>pm.expect(pm.response.json().info.title).to.eql(\"Aeron Flight Booking API\"));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

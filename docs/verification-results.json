@@ -1,464 +1,374 @@
 {
+  "application": "Aeron",
   "passed": true,
-  "base_url": "http://127.0.0.1:8083",
-  "http_checks": 76,
-  "persistence_checked": true,
-  "checks": [
+  "checks": 73,
+  "persistence": true,
+  "results": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/static/app.js",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/static/style.css",
+      "status": 200
+    },
     {
       "method": "GET",
       "path": "/health",
-      "expected": 200,
-      "actual": 200
+      "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/info",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/airports",
+      "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/openapi.json",
-      "expected": 200,
-      "actual": 200
+      "path": "/openapi.json",
+      "status": 200
     },
     {
       "method": "GET",
-      "path": "/missing",
-      "expected": 404,
-      "actual": 404
+      "path": "/docs",
+      "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/stats",
-      "expected": 200,
-      "actual": 200
+      "path": "/redoc",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?origin=XXX",
+      "status": 422
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?origin=ALA&destination=ALA",
+      "status": 422
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?limit=101",
+      "status": 422
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?sort=invalid",
+      "status": 422
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?origin=ALA&destination=NQZ&sort=price&limit=2",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?limit=1&offset=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?limit=1",
+      "status": 200
     },
     {
       "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
+      "path": "/api/flights",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/flights",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/flights",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/flights",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/flights",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/flights",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/flights",
+      "status": 409
     },
     {
       "method": "GET",
-      "path": "/api/tasks/1",
-      "expected": 200,
-      "actual": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks",
-      "expected": 200,
-      "actual": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/stats",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/flights/256",
+      "status": 200
     },
     {
       "method": "PUT",
-      "path": "/api/tasks/1",
-      "expected": 200,
-      "actual": 200
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/flights/256",
+      "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/tasks?completed=false&priority=high&q=Test+4de0ff4ae48e4dd5893fe29f2bbe77af",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/flights/256/seats",
+      "status": 200
     },
     {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 200,
-      "actual": 200
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 409
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 409
     },
     {
       "method": "GET",
-      "path": "/api/stats",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 401
     },
     {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 200,
-      "actual": 200
+      "method": "GET",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 401
     },
     {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
+      "method": "GET",
+      "path": "/api/bookings",
+      "status": 401
     },
     {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
+      "method": "GET",
+      "path": "/api/bookings?limit=100",
+      "status": 200
     },
     {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
+      "method": "GET",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 200
     },
     {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
+      "method": "GET",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34/itinerary",
+      "status": 200
     },
     {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/tasks/1",
-      "expected": 400,
-      "actual": 400
+      "method": "GET",
+      "path": "/api/flights/256",
+      "status": 200
     },
     {
       "method": "PUT",
-      "path": "/api/tasks/1",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks?completed=1",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks?priority=urgent",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks?q=",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks?unknown=value",
-      "expected": 400,
-      "actual": 400
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 415,
-      "actual": 415
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 413,
-      "actual": 413
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks/2147483647",
-      "expected": 404,
-      "actual": 404
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks/999999999999999999999",
-      "expected": 404,
-      "actual": 404
+      "path": "/api/flights/256",
+      "status": 409
     },
     {
       "method": "DELETE",
-      "path": "/api/tasks/999999999999999999999",
-      "expected": 404,
-      "actual": 404
+      "path": "/api/flights/256",
+      "status": 409
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 409
+    },
+    {
+      "method": "PUT",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 422
+    },
+    {
+      "method": "PUT",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 422
     },
     {
       "method": "PATCH",
-      "path": "/api/tasks/999999999999999999999",
-      "expected": 404,
-      "actual": 404
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 422
+    },
+    {
+      "method": "PUT",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 200
     },
     {
       "method": "PATCH",
-      "path": "/api/tasks/2147483647",
-      "expected": 404,
-      "actual": 404
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/2147483647",
-      "expected": 404,
-      "actual": 404
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/2",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/1",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "GET",
-      "path": "/api/tasks/1",
-      "expected": 404,
-      "actual": 404
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/1",
-      "expected": 404,
-      "actual": 404
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/3",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/4",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/5",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/6",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/7",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/8",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/10",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/9",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/12",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/tasks/11",
-      "expected": 204,
-      "actual": 204
-    },
-    {
-      "method": "GET",
-      "path": "/api/stats",
-      "expected": 200,
-      "actual": 200
-    },
-    {
-      "method": "POST",
-      "path": "/api/tasks",
-      "expected": 201,
-      "actual": 201
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 422
     },
     {
       "method": "PATCH",
-      "path": "/api/tasks/13",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 422
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/tasks",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/flights/256/seats",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 409
+    },
+    {
+      "check": "simultaneous same-seat requests",
+      "statuses": [
+        201,
+        409
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings/c40ca7c4-755c-4e78-858c-df9953a5fae7/cancel",
+      "status": 200
     },
     {
       "method": "DELETE",
-      "path": "/api/tasks/13",
-      "expected": 204,
-      "actual": 204
+      "path": "/api/bookings/c40ca7c4-755c-4e78-858c-df9953a5fae7",
+      "status": 204
     },
     {
       "method": "GET",
-      "path": "/api/stats",
-      "expected": 200,
-      "actual": 200
+      "path": "/api/flights?limit=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights/256/seats",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?limit=1",
+      "status": 200
+    },
+    {
+      "check": "booking, occupied seat and seed count survive container recreation",
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34/cancel",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34/cancel",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 409
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings/2c8fe000-e3c7-4628-b57f-9b9a18cd15fc/cancel",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/bookings/2c8fe000-e3c7-4628-b57f-9b9a18cd15fc",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings/ae83f863-469d-4a56-bbd3-6d5507f20f91/cancel",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/bookings/ae83f863-469d-4a56-bbd3-6d5507f20f91",
+      "status": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/flights/256",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights/256",
+      "status": 404
     }
   ]
 }

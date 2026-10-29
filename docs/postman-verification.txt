@@ -1,118 +1,153 @@
-docker :  Container dayboard-midterm-database-1  Running
-строка:2 знак:1
-+ docker compose --profile tools run --rm postman > docs/postman-verifi ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ( Container dayb...base-1  Running:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
- Container dayboard-midterm-backend-1  Running
- Container dayboard-midterm-database-1  Waiting
- Container dayboard-midterm-database-1  Healthy
-newman
-
-Dayboard - Midterm CRUD and validation
-
-→ 01 - Health and database
-  GET http://backend:8000/health [200 OK, 189B, 65ms]
-  ✓  HTTP 200
-  ✓  Database connected
-
-→ 02 - Application information
-  GET http://backend:8000/api/info [200 OK, 237B, 4ms]
-  ✓  HTTP 200
-  ✓  Application name
-
-→ 03 - List tasks
-  GET http://backend:8000/api/tasks [200 OK, 163B, 11ms]
-  ✓  HTTP 200
-  ✓  Tasks is an array
-
-→ 04 - Create task and save ID
-  POST http://backend:8000/api/tasks [201 CREATED, 307B, 15ms]
-  ✓  HTTP 201
-  ✓  Created task has ID, title and defaults
-  ✓  Location header
-
-→ 05 - Get task by saved ID
-  GET http://backend:8000/api/tasks/14 [200 OK, 277B, 10ms]
-  ✓  HTTP 200
-  ✓  Correct task ID
-  ✓  ISO timestamp
-
-→ 06 - Replace task with PUT
-  PUT http://backend:8000/api/tasks/14 [200 OK, 273B, 12ms]
-  ✓  HTTP 200
-  ✓  All fields replaced
-
-→ 07 - Complete task with PATCH
-  PATCH http://backend:8000/api/tasks/14 [200 OK, 272B, 14ms]
-  ✓  HTTP 200
-  ✓  Omitted fields retained
-
-→ 08 - Filter and search tasks
-  GET http://backend:8000/api/tasks?completed=true&priority=low&q=Postman [200 OK, 284B, 16ms]
-  ✓  HTTP 200
-  ✓  Created task appears in filtered list
-
-→ 09 - Live task statistics
-  GET http://backend:8000/api/stats [200 OK, 201B, 16ms]
-  ✓  HTTP 200
-  ✓  Consistent totals
-
-→ 10 - OpenAPI specification
-  GET http://backend:8000/api/openapi.json [200 OK, 18.84kB, 4ms]
-  ✓  HTTP 200
-  ✓  OpenAPI document
-
-→ 11 - Reject empty title
-  POST http://backend:8000/api/tasks [400 BAD REQUEST, 210B, 4ms]
-  ✓  HTTP 400
-  ✓  Clear validation message
-
-→ 12 - Reject incomplete PUT
-  PUT http://backend:8000/api/tasks/14 [400 BAD REQUEST, 215B, 3ms]
-  ✓  HTTP 400
-  ✓  Required fields reported
-
-→ 13 - Reject wrong boolean type
-  PATCH http://backend:8000/api/tasks/14 [400 BAD REQUEST, 204B, 4ms]
-  ✓  HTTP 400
-
-→ 14 - Delete task
-  DELETE http://backend:8000/api/tasks/14 [204 NO CONTENT, 146B, 13ms]
-  ✓  HTTP 204
-  ✓  Empty response body
-
-→ 15 - Deleted task is not found
-  GET http://backend:8000/api/tasks/14 [404 NOT FOUND, 184B, 10ms]
-  ✓  HTTP 404
-  ✓  Not found message
-
-→ 16 - Cannot update deleted task
-  PATCH http://backend:8000/api/tasks/14 [404 NOT FOUND, 184B, 11ms]
-  ✓  HTTP 404
-
-→ 17 - Frontend is served
-  GET http://backend:8000/ [200 OK, 12.61kB, 3ms]
-  ✓  HTTP 200
-  ✓  Dayboard HTML
-
-┌─────────────────────────┬──────────────────┬──────────────────┐
-│                         │         executed │           failed │
-├─────────────────────────┼──────────────────┼──────────────────┤
-│              iterations │                1 │                0 │
-├─────────────────────────┼──────────────────┼──────────────────┤
-│                requests │               17 │                0 │
-├─────────────────────────┼──────────────────┼──────────────────┤
-│            test-scripts │               17 │                0 │
-├─────────────────────────┼──────────────────┼──────────────────┤
-│      prerequest-scripts │                1 │                0 │
-├─────────────────────────┼──────────────────┼──────────────────┤
-│              assertions │               34 │                0 │
-├─────────────────────────┴──────────────────┴──────────────────┤
-│ total run duration: 529ms                                     │
-├───────────────────────────────────────────────────────────────┤
-│ total data received: 31.78kB (approx)                         │
-├───────────────────────────────────────────────────────────────┤
-│ average response time: 12ms [min: 3ms, max: 65ms, s.d.: 13ms] │
-└───────────────────────────────────────────────────────────────┘
+ Container aeron-midterm-database-1  Running
+ Container aeron-midterm-backend-1  Running
+ Container aeron-midterm-database-1  Waiting
+ Container aeron-midterm-database-1  Healthy
+newman
+
+Aeron — Flight Booking API
+
+→ Health
+  GET http://backend:8000/health [200 OK, 226B, 58ms]
+  ✓  HTTP 200
+  ✓  Database connected
+
+→ Airports
+  GET http://backend:8000/api/airports [200 OK, 865B, 7ms]
+  ✓  HTTP 200
+  ✓  Six airports
+
+→ Search route and sort
+  GET http://backend:8000/api/flights?origin=ALA&destination=NQZ&sort=price&limit=2 [200 OK, 2.08kB, 13ms]
+  ✓  HTTP 200
+  ✓  Search results
+
+→ Reject invalid search
+  GET http://backend:8000/api/flights?origin=ALA&destination=ALA [422 Unprocessable Entity, 244B, 7ms]
+  ✓  HTTP 422
+
+→ Protect admin writes
+  POST http://backend:8000/api/flights [401 Unauthorized, 242B, 6ms]
+  ✓  HTTP 401
+
+→ Create flight
+  POST http://backend:8000/api/flights [201 Created, 1.14kB, 13ms]
+  ✓  HTTP 201
+  ✓  Empty cabin
+
+→ Get flight
+  GET http://backend:8000/api/flights/321 [200 OK, 1.14kB, 6ms]
+  ✓  HTTP 200
+
+→ Update flight
+  PUT http://backend:8000/api/flights/321 [200 OK, 1.14kB, 17ms]
+  ✓  HTTP 200
+  ✓  Updated price
+
+→ Seat map
+  GET http://backend:8000/api/flights/321/seats [200 OK, 984B, 10ms]
+  ✓  HTTP 200
+  ✓  24 seats
+
+→ Create reservation
+  POST http://backend:8000/api/bookings [201 Created, 1.58kB, 12ms]
+  ✓  HTTP 201
+  ✓  Server computes fare
+
+→ Safe retry returns same reservation
+  POST http://backend:8000/api/bookings [200 OK, 1.57kB, 10ms]
+  ✓  HTTP 200
+  ✓  Same booking
+
+→ Reject competing reservation
+  POST http://backend:8000/api/bookings [409 Conflict, 286B, 9ms]
+  ✓  HTTP 409
+
+→ Protect booking privacy
+  GET http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb [401 Unauthorized, 271B, 6ms]
+  ✓  HTTP 401
+
+→ Get own reservation
+  GET http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb [200 OK, 1.43kB, 8ms]
+  ✓  HTTP 200
+
+→ List reservations as admin
+  GET http://backend:8000/api/bookings?limit=10 [200 OK, 2.65kB, 15ms]
+  ✓  HTTP 200
+  ✓  No management tokens in list
+
+→ Replace passenger details
+  PUT http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb [200 OK, 1.43kB, 14ms]
+  ✓  HTTP 200
+
+→ Change seat
+  PATCH http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb [200 OK, 1.43kB, 13ms]
+  ✓  HTTP 200
+  ✓  New seat
+
+→ Download itinerary
+  GET http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb/itinerary [200 OK, 568B, 6ms]
+  ✓  HTTP 200
+  ✓  Demo disclosure
+
+→ Do not delete active reservation
+  DELETE http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb [409 Conflict, 269B, 8ms]
+  ✓  HTTP 409
+
+→ Protect flight with booking history
+  PUT http://backend:8000/api/flights/321 [409 Conflict, 254B, 10ms]
+  ✓  HTTP 409
+
+→ Cancel and release seat
+  POST http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb/cancel [200 OK, 1.43kB, 11ms]
+  ✓  HTTP 200
+  ✓  Cancelled
+
+→ Cancellation is idempotent
+  POST http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb/cancel [200 OK, 1.43kB, 12ms]
+  ✓  HTTP 200
+
+→ Verify released inventory
+  GET http://backend:8000/api/flights/321 [200 OK, 1.14kB, 8ms]
+  ✓  HTTP 200
+  ✓  All seats available
+
+→ Delete cancelled reservation
+  DELETE http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb [204 No Content, 169B, 13ms]
+  ✓  HTTP 204
+
+→ Verify reservation removed
+  GET http://backend:8000/api/bookings/8063d410-1ac2-4353-b51e-25d644b61deb [404 Not Found, 250B, 7ms]
+  ✓  HTTP 404
+
+→ Delete test flight
+  DELETE http://backend:8000/api/flights/321 [204 No Content, 144B, 9ms]
+  ✓  HTTP 204
+
+→ Verify flight removed
+  GET http://backend:8000/api/flights/321 [404 Not Found, 224B, 6ms]
+  ✓  HTTP 404
+
+→ OpenAPI contract
+  GET http://backend:8000/openapi.json [200 OK, 16.38kB, 39ms]
+  ✓  HTTP 200
+  ✓  Aeron contract
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               28 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               28 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │                3 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               42 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 833ms                                     │
+├───────────────────────────────────────────────────────────────┤
+│ total data received: 35.14kB (approx)                         │
+├───────────────────────────────────────────────────────────────┤
+│ average response time: 12ms [min: 6ms, max: 58ms, s.d.: 10ms] │
+└───────────────────────────────────────────────────────────────┘

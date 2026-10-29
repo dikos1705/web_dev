@@ -1,35 +1,27 @@
-python :  Container dayboard-midterm-backend-1  Stopping
-строка:2 знак:1
-+ python verify.py --persistence > docs/api-verification.txt 2>&1; Get- ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ( Container dayb...end-1  Stopping:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
- Container dayboard-midterm-backend-1  Stopped
- Container dayboard-midterm-backend-1  Removing
- Container dayboard-midterm-backend-1  Removed
- Container dayboard-midterm-database-1  Stopping
- Container dayboard-midterm-database-1  Stopped
- Container dayboard-midterm-database-1  Removing
- Container dayboard-midterm-database-1  Removed
- Network dayboard-midterm_app-network  Removing
- Network dayboard-midterm_app-network  Removed
- Network dayboard-midterm_app-network  Creating
- Network dayboard-midterm_app-network  Created
- Container dayboard-midterm-database-1  Creating
- Container dayboard-midterm-database-1  Created
- Container dayboard-midterm-backend-1  Creating
- Container dayboard-midterm-backend-1  Created
- Container dayboard-midterm-database-1  Starting
- Container dayboard-midterm-database-1  Started
- Container dayboard-midterm-database-1  Waiting
- Container dayboard-midterm-database-1  Healthy
- Container dayboard-midterm-backend-1  Starting
- Container dayboard-midterm-backend-1  Started
- Container dayboard-midterm-database-1  Waiting
- Container dayboard-midterm-backend-1  Waiting
- Container dayboard-midterm-database-1  Healthy
- Container dayboard-midterm-backend-1  Healthy
-PASS: CRUD (GET list/by ID, POST, PUT, PATCH, DELETE), filters, statistics, validation, SQL literal and 10 concurrent writes
-PASS: non-root backend, no .env in image; data survives removal and recreation of BOTH containers
-PASS: 76 HTTP status checks. Evidence: docs/verification-results.json
+ Container aeron-midterm-backend-1  Stopping
+ Container aeron-midterm-backend-1  Stopped
+ Container aeron-midterm-backend-1  Removing
+ Container aeron-midterm-backend-1  Removed
+ Container aeron-midterm-database-1  Stopping
+ Container aeron-midterm-database-1  Stopped
+ Container aeron-midterm-database-1  Removing
+ Container aeron-midterm-database-1  Removed
+ Network aeron-midterm_app-network  Removing
+ Network aeron-midterm_app-network  Removed
+ Network aeron-midterm_app-network  Creating
+ Network aeron-midterm_app-network  Created
+ Container aeron-midterm-database-1  Creating
+ Container aeron-midterm-database-1  Created
+ Container aeron-midterm-backend-1  Creating
+ Container aeron-midterm-backend-1  Created
+ Container aeron-midterm-database-1  Starting
+ Container aeron-midterm-database-1  Started
+ Container aeron-midterm-database-1  Waiting
+ Container aeron-midterm-database-1  Healthy
+ Container aeron-midterm-backend-1  Starting
+ Container aeron-midterm-backend-1  Started
+ Container aeron-midterm-database-1  Waiting
+ Container aeron-midterm-backend-1  Waiting
+ Container aeron-midterm-database-1  Healthy
+ Container aeron-midterm-backend-1  Healthy
+PASS: 73 checks; concurrency, ownership, idempotency, CRUD, persistence

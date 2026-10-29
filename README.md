@@ -1,176 +1,100 @@
-# Dayboard - Web Development Midterm
+# Aeron — A little further.
 
-**Author: Dias.** A small task-planning application: create tasks, read them,
-edit their titles and priorities, complete/reopen them, filter the list and
-delete finished work. PostgreSQL stores the records across container recreation.
+A flight reservation application built with **FastAPI, SQLAlchemy and PostgreSQL**, with a responsive browser interface and a reproducible Docker Compose environment. Web Development Midterm · Dias.
 
-Submission branch: **[midterm-project](https://github.com/dikos1705/web_dev/tree/midterm-project)**.
-This extends Homework #2. The `main` and `homework-2-docker-compose` branches
-remain available for their own defenses.
+Search routes, compare three fares, choose a seat, reserve a flight, edit passenger details, download an itinerary and cancel a reservation. The server protects seat inventory in PostgreSQL transactions, computes prices itself and supports safe request retries.
 
-![Dayboard task board](docs/preview.png)
+**Educational demo:** flights, cabin inventory and prices are synthetic. No real airline integration, payment, email delivery or ticket issuance. One passenger and one one-way flight per reservation. Use sample passenger details.
 
-## Run the complete application
+![Aeron flight search](docs/preview.png)
 
-Requirements: Docker Desktop with Linux containers and Docker Compose v2.
-Port **8083** should be free. The default Compose project is `dayboard-midterm`,
-separate from Homework #2 on port 8082.
+## Run
+
+Requirements: Docker Desktop with Linux containers and Compose v2; Python 3.10+ for the credential generator and integration script. Python dependencies run inside Docker.
 
 ```sh
-git clone --branch midterm-project --single-branch https://github.com/dikos1705/web_dev.git
-cd web_dev
-```
-
-Place the separately submitted `.env` in this folder. If you cloned the public
-repository, generate a fresh one with Python 3:
-
-```sh
+git clone --branch midterm-project https://github.com/dikos1705/web_dev.git aeron
+cd aeron
 python setup_env.py
-```
-
-Alternatively copy `.env.example` to `.env` and replace its password placeholder
-with a unique local password. On PowerShell: `Copy-Item .env.example .env`;
-on macOS/Linux: `cp .env.example .env`.
-
-Start all runtime services with the required command:
-
-```sh
-docker compose up
-```
-
-Or start in the background and wait for readiness:
-
-```sh
 docker compose up -d --build --wait
 ```
 
-Open **http://localhost:8083**. The initial database is empty; add your own tasks.
-API: **http://localhost:8083/api/tasks**.
-OpenAPI: **http://localhost:8083/api/openapi.json**.
+Open **http://localhost:8083**. Swagger: **http://localhost:8083/docs**. ReDoc: **http://localhost:8083/redoc**.
+
+The submission ZIP includes working local `.env` settings: extract it and run `docker compose up -d --build --wait`. GitHub contains only `.env.example`; `setup_env.py` generates unique local secrets and preserves an existing `.env`. If port 8083 is occupied, change `APP_PORT` in `.env` before starting, or use `python setup_env.py --port 8084` before generating it.
+
+Try **Almaty → Astana tomorrow**, choose any of the three departures, select Standard and a window seat, then enter `Alex Morgan` / `alex@example.com`. The confirmation opens My bookings. Bookings remain after browser reload and container recreation.
+
+## Features
+
+- Six airports: Almaty, Astana, Shymkent, Aktau, Dubai and Istanbul. Nine route/departure combinations each day for the next seven days are inserted at startup (63 flights on an empty database). Existing schedules and bookings are preserved; later restarts extend the demo horizon without replacing records.
+- Search by origin, destination and departure date, with departure/price sorting. UI shows airport-local times, duration, available seats and KZT prices.
+- Light, Standard and Flex fares include different baggage allowances. Price multipliers are 100%, 125% and 150%, rounded up to whole KZT. All fares allow cancellation in this demo; Flex refers to baggage, not a real airline refund contract.
+- Interactive 24-seat demo cabin, with availability checked again during the database transaction.
+- Passenger name/email updates, API seat changes, cancellation that releases inventory and deletion of cancelled records.
+- Downloadable text itinerary with a clear demo disclosure.
+- Flight CRUD and booking administration via protected API endpoints.
+- Loading, empty, validation, transport and seat-conflict states; keyboard-accessible native dialogs and responsive layouts. Original SVG plane illustration; no frontend build step or external assets required.
+
+![Fare and seat selection](docs/booking.png)
 
 ## API and Postman
 
-- **[Complete API documentation](docs/API.md)**: every endpoint, payload,
-  validation rule and response code.
-- **[OpenAPI 3 document](docs/openapi.json)**.
-- **[Exported Postman Collection](postman/Dayboard.postman_collection.json)**:
-  17 ordered requests with assertions, automatic ID capture and cleanup.
-- **[Optional local Postman environment](postman/Dayboard.local.postman_environment.json)**.
+Complete endpoint guide: [docs/API.md](docs/API.md). Live generated contract: `/openapi.json`; exported copy: [docs/openapi.json](docs/openapi.json).
 
-Import the collection into Postman and run it in order. Request 04 creates a
-task and saves `taskId`; request 14 deletes it. Negative requests intentionally
-expect 400 or 404. No manually entered ID or API key is needed.
+Import `postman/Aeron.postman_collection.json`. `setup_env.py` creates the ignored **`postman/Aeron.local.private.postman_environment.json`** containing your local admin key: import it and choose that environment. It is also included in the private submission ZIP. The public `Aeron.local.postman_environment.json` is a template: set its `adminKey` from your local `.env` if using it instead.
 
-You can also execute the collection in Docker:
+Run all 28 requests in order. They create their own flight and reservation, check the lifecycle and negative cases, then remove their records. Do not run the collection concurrently against the same server. For a terminal run, Compose supplies the local admin key without storing it in the collection:
 
 ```sh
 docker compose --profile tools run --rm postman
 ```
 
-This uses the [official Newman Docker runner](https://learning.postman.com/latest-v-12/docs/reference/newman-cli/newman-with-docker).
-
-| Method | Path | Use |
-| --- | --- | --- |
-| GET | `/api/tasks` | List; filter by completion, priority and text |
-| GET | `/api/tasks/{id}` | Read one task |
-| POST | `/api/tasks` | Create |
-| PUT | `/api/tasks/{id}` | Replace title, priority and completion |
-| PATCH | `/api/tasks/{id}` | Update selected fields |
-| DELETE | `/api/tasks/{id}` | Delete |
-| GET | `/api/stats` | Live totals |
-| GET | `/api/info` | App configuration |
-| GET | `/health` | Real database readiness |
-| GET | `/api/openapi.json` | API specification |
-
-## Architecture
-
-```text
-Browser / Postman -> localhost:8083
-                         |
-                  backend:8000
-             Flask + Gunicorn (custom image)
-                         |
-            PostgreSQL connection via database:5432
-                         |
-                 database (PostgreSQL 17)
-                         |
-              postgres-data named volume
-
-backend and database share app-network (bridge).
-Optional Newman runner -> backend:8000 on the same network.
-```
-
-Compose DNS resolves `database`; `localhost` inside the backend would refer to
-the backend container itself. Only the backend has a published host port. The
-database is reachable by services on the Compose network.
-
-`app.py` contains the HTTP routes; `validation.py` validates request values;
-`database.py` reads connection settings and initializes the schema idempotently.
-Psycopg connection contexts commit successful writes and roll back failures.
-All user-supplied SQL values use placeholders. The frontend displays task titles
-using `textContent`, including titles that contain HTML characters.
-
-## Database resource
-
-The `tasks` table contains an identity primary key, constrained title and
-priority fields, a completion boolean and a UTC creation timestamp.
-The schema is defined in `database.py`; repeated startup preserves existing rows.
-
-To inspect it during defense:
-
-```sh
-docker compose exec database sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TABLE tasks;"'
-```
-
-The named volume is `dayboard-midterm_postgres-data` with the default project
-name. `docker compose down` removes containers and the network but retains data.
-`docker compose up -d --wait` recreates the services and reattaches the volume.
-`docker compose down -v` intentionally deletes this project's database; use it
-only when you want to reset demo data.
-
-## Configuration
-
-| `.env` variable | Meaning |
-| --- | --- |
-| `POSTGRES_PASSWORD` | Required local database password, generated by `setup_env.py` |
-| `POSTGRES_DB` / `POSTGRES_USER` | Database name and account; default `taskboard` in Compose |
-| `APP_PORT` | Published localhost port, default 8083 |
-| `APP_MESSAGE` | Heading shown in the task board |
-
-Compose maps these to `DB_HOST=database`, `DB_PORT=5432`, `DB_NAME`, `DB_USER`,
-`DB_PASSWORD`, and `PORT=8000` inside the backend. `.env` is excluded from Git
-and the Docker build context. The separately submitted ZIP contains working
-local-demo credentials; it must not be uploaded as a public repository file.
-No corporate services, credentials or coursework source documents are included.
-
-PostgreSQL initialization variables apply on first creation of the data volume.
-Changing its password in `.env` later does not change an existing database account.
-For a different host port edit `APP_PORT` and recreate the backend with Compose.
-For changed Python/HTML code, run `docker compose up -d --build --wait`.
+The browser never receives the admin key. Flight writes and the booking list need `X-Admin-Key`. A reservation has its own `X-Booking-Token`, returned only by creation/replay. The browser stores that token and the booking ID locally. This is a small capability-based demo, without user accounts: losing browser storage loses the browser shortcut, and possession of a token grants management access. Keep local keys and tokens private. The `request_key` is also a private recovery key; reuse it only for the exact same creation request.
 
 ## Verification
 
-Black-box tests use Python's standard library and the running API:
-
 ```sh
-python verify.py
 python verify.py --persistence
+docker compose --profile tools run --rm postman
 ```
 
-The persistence option removes and recreates **this Compose project's** two
-runtime containers, verifies a saved task, then deletes that test task. It keeps
-the named volume. Tests also exercise full CRUD, error responses, filters,
-concurrent writes, literal SQL/HTML-looking text, and non-root execution.
+The integration script checks real HTTP requests and PostgreSQL behavior: CRUD, validation, owner/admin access, fare calculation, idempotent retry, conflicting seats, **two simultaneous requests for one seat**, cancellation, seat reuse and persistence after `down` / `up`. It removes only its own temporary records. `--persistence` briefly restarts this Compose project; omit the option when you want to keep it running uninterrupted. GitHub Actions repeats these checks on branch pushes.
 
-Recorded evidence is in [docs/VERIFICATION.md](docs/VERIFICATION.md).
-The GitHub Actions workflow repeats the API/persistence and Postman checks.
+See [verification evidence](docs/VERIFICATION.md), machine-readable [results](docs/verification-results.json) and [defense notes in Russian](DEFENSE_RU.md).
 
-## Files to submit and defense
+## Structure and architecture
 
-1. Public branch link at the top of this README.
-2. Separately supplied ZIP with the complete project and working `.env`.
-3. Press **Turn in** in the course portal before the deadline.
+```text
+Browser / Postman
+       | localhost:8083 -> container:8000
+FastAPI + static frontend (backend service, UID 10001)
+       | database:5432, internal Compose network
+PostgreSQL 17 (database service)
+       | named volume: aeron-midterm_postgres-data
+Persistent airports, flights and bookings
+```
 
-The optional frontend supports add, edit, complete/reopen, delete and filters.
-Use Postman to demonstrate the API itself. See **[bilingual defense notes](DEFENSE_RU.md)**
-for the architecture explanation, Docker questions and live modification steps.
+`backend/main.py` defines HTTP routes and dependencies; `schemas.py` validates inputs/outputs; `models.py` defines relational constraints; `services.py` owns prices and booking transactions; `security.py` checks keys; `seed.py` creates synthetic schedules. `frontend/` is dependency-free HTML/CSS/JavaScript.
+
+Each write commits once or rolls back. All inventory mutations lock the flight row before the booking row, so creation, cancellation and seat changes serialize on that flight. A PostgreSQL partial unique index additionally forbids two confirmed bookings on the same flight/seat. Cancellation removes a record from that index without erasing its history. Flights with booking history cannot be changed or deleted. The server stores integer money, never accepts a client-provided total, and derives management tokens using HMAC with the local booking secret.
+
+The database uses service DNS `database`, not `localhost`. Only the backend is published, bound to host loopback. Database readiness gates backend startup. The custom Dockerfile runs as a non-root user and copies only backend/frontend/requirements; local secrets are provided at runtime. The optional Postman service starts only with the tools profile.
+
+## Useful commands
+
+```sh
+docker compose ps
+docker compose logs --tail 100 backend
+docker compose up -d --build --wait  # apply source changes
+docker compose down                # retain database volume
+docker compose up -d --wait         # reuse saved database
+```
+
+`docker compose down --volumes` deliberately erases this project's database. Do not use it when you need saved bookings. Keep `BOOKING_SECRET` stable when keeping the volume; changing it invalidates existing management tokens. Changing the PostgreSQL password in `.env` does not automatically change the password in an initialized database.
+
+## Scope
+
+This project is designed for a local coursework demonstration. For a public airline service, the next steps would include account-based authentication, TLS, abuse protection, managed secrets, schema migrations, monitoring and an actual inventory/payment integration. Database tables are initialized with SQLAlchemy `create_all` for this fixed demo schema. No production-readiness claim is made.
+
+Submission: public repository branch link, source/Docker/API/Postman assets and the separate ZIP with working local environment files. The course portal's **Turn in** button must be pressed by the student.
