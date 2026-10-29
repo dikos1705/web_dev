@@ -1,0 +1,118 @@
+docker :  Container dayboard-midterm-database-1  Running
+строка:2 знак:1
++ docker compose --profile tools run --rm postman > docs/postman-verifi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container dayb...base-1  Running:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Container dayboard-midterm-backend-1  Running
+ Container dayboard-midterm-database-1  Waiting
+ Container dayboard-midterm-database-1  Healthy
+newman
+
+Dayboard - Midterm CRUD and validation
+
+→ 01 - Health and database
+  GET http://backend:8000/health [200 OK, 189B, 65ms]
+  ✓  HTTP 200
+  ✓  Database connected
+
+→ 02 - Application information
+  GET http://backend:8000/api/info [200 OK, 237B, 4ms]
+  ✓  HTTP 200
+  ✓  Application name
+
+→ 03 - List tasks
+  GET http://backend:8000/api/tasks [200 OK, 163B, 11ms]
+  ✓  HTTP 200
+  ✓  Tasks is an array
+
+→ 04 - Create task and save ID
+  POST http://backend:8000/api/tasks [201 CREATED, 307B, 15ms]
+  ✓  HTTP 201
+  ✓  Created task has ID, title and defaults
+  ✓  Location header
+
+→ 05 - Get task by saved ID
+  GET http://backend:8000/api/tasks/14 [200 OK, 277B, 10ms]
+  ✓  HTTP 200
+  ✓  Correct task ID
+  ✓  ISO timestamp
+
+→ 06 - Replace task with PUT
+  PUT http://backend:8000/api/tasks/14 [200 OK, 273B, 12ms]
+  ✓  HTTP 200
+  ✓  All fields replaced
+
+→ 07 - Complete task with PATCH
+  PATCH http://backend:8000/api/tasks/14 [200 OK, 272B, 14ms]
+  ✓  HTTP 200
+  ✓  Omitted fields retained
+
+→ 08 - Filter and search tasks
+  GET http://backend:8000/api/tasks?completed=true&priority=low&q=Postman [200 OK, 284B, 16ms]
+  ✓  HTTP 200
+  ✓  Created task appears in filtered list
+
+→ 09 - Live task statistics
+  GET http://backend:8000/api/stats [200 OK, 201B, 16ms]
+  ✓  HTTP 200
+  ✓  Consistent totals
+
+→ 10 - OpenAPI specification
+  GET http://backend:8000/api/openapi.json [200 OK, 18.84kB, 4ms]
+  ✓  HTTP 200
+  ✓  OpenAPI document
+
+→ 11 - Reject empty title
+  POST http://backend:8000/api/tasks [400 BAD REQUEST, 210B, 4ms]
+  ✓  HTTP 400
+  ✓  Clear validation message
+
+→ 12 - Reject incomplete PUT
+  PUT http://backend:8000/api/tasks/14 [400 BAD REQUEST, 215B, 3ms]
+  ✓  HTTP 400
+  ✓  Required fields reported
+
+→ 13 - Reject wrong boolean type
+  PATCH http://backend:8000/api/tasks/14 [400 BAD REQUEST, 204B, 4ms]
+  ✓  HTTP 400
+
+→ 14 - Delete task
+  DELETE http://backend:8000/api/tasks/14 [204 NO CONTENT, 146B, 13ms]
+  ✓  HTTP 204
+  ✓  Empty response body
+
+→ 15 - Deleted task is not found
+  GET http://backend:8000/api/tasks/14 [404 NOT FOUND, 184B, 10ms]
+  ✓  HTTP 404
+  ✓  Not found message
+
+→ 16 - Cannot update deleted task
+  PATCH http://backend:8000/api/tasks/14 [404 NOT FOUND, 184B, 11ms]
+  ✓  HTTP 404
+
+→ 17 - Frontend is served
+  GET http://backend:8000/ [200 OK, 12.61kB, 3ms]
+  ✓  HTTP 200
+  ✓  Dayboard HTML
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               17 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               17 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               34 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 529ms                                     │
+├───────────────────────────────────────────────────────────────┤
+│ total data received: 31.78kB (approx)                         │
+├───────────────────────────────────────────────────────────────┤
+│ average response time: 12ms [min: 3ms, max: 65ms, s.d.: 13ms] │
+└───────────────────────────────────────────────────────────────┘

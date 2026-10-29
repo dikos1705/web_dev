@@ -1,0 +1,27 @@
+name: Verify midterm
+on:
+  push:
+    branches: [midterm-project]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate local credentials
+        run: python3 setup_env.py
+      - name: Build and start
+        run: docker compose up -d --build --wait --wait-timeout 180
+      - name: API and persistence verification
+        run: python3 verify.py --persistence
+      - name: Run exported Postman collection
+        run: docker compose --profile tools run --rm postman
+      - name: Print application logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail 100
+      - name: Stop this runner's containers
+        if: always()
+        run: docker compose down

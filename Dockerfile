@@ -5,7 +5,8 @@ RUN groupadd --gid 10001 appuser \
     && useradd --uid 10001 --gid appuser --no-create-home appuser
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY --chown=appuser:appuser app.py index.html ./
+COPY --chown=appuser:appuser app.py database.py validation.py index.html ./
+COPY --chown=appuser:appuser docs/openapi.json ./docs/openapi.json
 USER appuser
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \

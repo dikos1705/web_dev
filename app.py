@@ -1,40 +1,33 @@
-"""Homework 2: persistent task board with PostgreSQL and Flask."""
+"""Dayboard REST API. PostgreSQL stores every task."""
 import os
-import time
 from pathlib import Path
+
 import psycopg
-from psycopg.rows import dict_row
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, url_for
 from werkzeug.exceptions import HTTPException
 
+from database import connect, initialize_database
+from validation import parse_task
 
-def connect():
-    return psycopg.connect(host=os.environ['DB_HOST'], port=int(os.environ.get('DB_PORT', '5432')),
-        dbname=os.environ['DB_NAME'], user=os.environ['DB_USER'], password=os.environ['DB_PASSWORD'],
-        connect_timeout=3, row_factory=dict_row)
+ROOT = Path(__file__).parent
+
+
+def task_json(task):
+    return {**task, 'created_at': task['created_at'].isoformat().replace('+00:00', 'Z')}
 
 
 def create_app():
     app = Flask(__name__)
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
-    for attempt in range(30):
-        try:
-            with connect() as connection:
-                connection.execute("""CREATE TABLE IF NOT EXISTS tasks (
-                    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    title VARCHAR(120) NOT NULL CHECK (length(trim(title)) > 0),
-                    priority VARCHAR(10) NOT NULL CHECK (priority IN ('low', 'medium', 'high')),
-                    completed BOOLEAN NOT NULL DEFAULT FALSE,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)""")
-            break
-        except psycopg.OperationalError:
-            if attempt == 29:
-                raise RuntimeError('Database did not become ready') from None
-            time.sleep(1)
+    initialize_database()
 
     @app.errorhandler(HTTPException)
     def http_error(error):
         return jsonify(error=error.description), error.code
+
+    @app.errorhandler(ValueError)
+    def validation_error(error):
+        return jsonify(error=str(error)), 400
 
     @app.errorhandler(psycopg.Error)
     def database_error(error):
@@ -43,7 +36,11 @@ def create_app():
 
     @app.get('/')
     def home():
-        return send_file(Path(__file__).with_name('index.html'))
+        return send_file(ROOT / 'index.html')
+
+    @app.get('/api/openapi.json')
+    def specification():
+        return send_file(ROOT / 'docs/openapi.json', mimetype='application/json')
 
     @app.get('/health')
     def health():
@@ -53,44 +50,79 @@ def create_app():
 
     @app.get('/api/info')
     def info():
-        return jsonify(message=os.environ.get('APP_MESSAGE', 'Make room for good work.'),
+        return jsonify(name='Dayboard', version='1.0.0',
+                       message=os.environ.get('APP_MESSAGE', 'Make room for good work.'),
                        port=int(os.environ.get('PORT', '8000')))
 
     @app.get('/api/tasks')
     def list_tasks():
+        clauses, values = [], []
+        unknown = set(request.args) - {'completed', 'priority', 'q'}
+        if unknown:
+            raise ValueError('Unknown query parameter: ' + ', '.join(sorted(unknown)))
+        if 'completed' in request.args:
+            completed = request.args['completed']
+            if completed not in ('true', 'false'):
+                raise ValueError('completed query parameter must be true or false')
+            clauses.append('completed = %s')
+            values.append(completed == 'true')
+        if 'priority' in request.args:
+            priority = request.args['priority']
+            if priority not in ('low', 'medium', 'high'):
+                raise ValueError('Priority must be low, medium or high')
+            clauses.append('priority = %s')
+            values.append(priority)
+        if 'q' in request.args:
+            query = request.args['q'].strip()
+            if not 1 <= len(query) <= 120:
+                raise ValueError('Search must contain 1 to 120 characters')
+            clauses.append('strpos(lower(title), lower(%s)) > 0')
+            values.append(query)
+        where = ' WHERE ' + ' AND '.join(clauses) if clauses else ''
         with connect() as connection:
-            tasks = connection.execute('SELECT * FROM tasks ORDER BY completed, id DESC').fetchall()
-        return jsonify(tasks=tasks)
+            tasks = connection.execute('SELECT * FROM tasks' + where + ' ORDER BY completed, id DESC', values).fetchall()
+        return jsonify(tasks=[task_json(task) for task in tasks])
+
+    @app.get('/api/tasks/<int:task_id>')
+    def get_task(task_id):
+        if not 1 <= task_id <= 2147483647:
+            return jsonify(error='Task not found'), 404
+        with connect() as connection:
+            task = connection.execute('SELECT * FROM tasks WHERE id = %s', (task_id,)).fetchone()
+        if task is None:
+            return jsonify(error='Task not found'), 404
+        return jsonify(task_json(task))
 
     @app.post('/api/tasks')
     def add_task():
-        data = request.get_json()
-        if not isinstance(data, dict):
-            return jsonify(error='Send a JSON object'), 400
-        title, priority = data.get('title'), data.get('priority', 'medium')
-        if not isinstance(title, str) or not 1 <= len(title.strip()) <= 120:
-            return jsonify(error='Title must contain 1 to 120 characters'), 400
-        if not isinstance(priority, str) or priority not in ('low', 'medium', 'high'):
-            return jsonify(error='Priority must be low, medium or high'), 400
+        data = parse_task(request.get_json(), mode='create')
         with connect() as connection:
-            task = connection.execute('INSERT INTO tasks (title, priority) VALUES (%s, %s) RETURNING *',
-                                      (title.strip(), priority)).fetchone()
-        return jsonify(task), 201
+            task = connection.execute(
+                'INSERT INTO tasks (title, priority, completed) VALUES (%s, %s, %s) RETURNING *',
+                (data['title'], data['priority'], data['completed'])).fetchone()
+        response = jsonify(task_json(task))
+        response.status_code = 201
+        response.headers['Location'] = url_for('get_task', task_id=task['id'])
+        return response
 
-    @app.patch('/api/tasks/<int:task_id>')
+    @app.route('/api/tasks/<int:task_id>', methods=['PUT', 'PATCH'])
     def update_task(task_id):
-        data = request.get_json()
-        if not isinstance(data, dict) or type(data.get('completed')) is not bool:
-            return jsonify(error='completed must be a JSON boolean'), 400
+        data = parse_task(request.get_json(), mode='replace' if request.method == 'PUT' else 'patch')
+        if not 1 <= task_id <= 2147483647:
+            return jsonify(error='Task not found'), 404
         with connect() as connection:
-            task = connection.execute('UPDATE tasks SET completed = %s WHERE id = %s RETURNING *',
-                                      (data['completed'], task_id)).fetchone()
+            task = connection.execute('''UPDATE tasks SET
+                title = COALESCE(%s, title), priority = COALESCE(%s, priority),
+                completed = COALESCE(%s, completed) WHERE id = %s RETURNING *''',
+                (data.get('title'), data.get('priority'), data.get('completed'), task_id)).fetchone()
         if task is None:
             return jsonify(error='Task not found'), 404
-        return jsonify(task)
+        return jsonify(task_json(task))
 
     @app.delete('/api/tasks/<int:task_id>')
     def delete_task(task_id):
+        if not 1 <= task_id <= 2147483647:
+            return jsonify(error='Task not found'), 404
         with connect() as connection:
             removed = connection.execute('DELETE FROM tasks WHERE id = %s RETURNING id', (task_id,)).fetchone()
         if removed is None:
@@ -100,11 +132,11 @@ def create_app():
     @app.get('/api/stats')
     def stats():
         with connect() as connection:
-            result = connection.execute("""SELECT count(*) AS total,
+            result = connection.execute('''SELECT count(*) AS total,
                 count(*) FILTER (WHERE completed) AS completed,
                 count(*) FILTER (WHERE NOT completed) AS remaining,
                 count(*) FILTER (WHERE NOT completed AND priority = 'high') AS urgent
-                FROM tasks""").fetchone()
+                FROM tasks''').fetchone()
         return jsonify(result)
 
     return app

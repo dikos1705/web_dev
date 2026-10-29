@@ -1,0 +1,464 @@
+{
+  "passed": true,
+  "base_url": "http://127.0.0.1:8083",
+  "http_checks": 76,
+  "persistence_checked": true,
+  "checks": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/info",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/openapi.json",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/missing",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks/1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/tasks/1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks?completed=false&priority=high&q=Test+4de0ff4ae48e4dd5893fe29f2bbe77af",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "PUT",
+      "path": "/api/tasks/1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks?completed=1",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks?priority=urgent",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks?q=",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks?unknown=value",
+      "expected": 400,
+      "actual": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 415,
+      "actual": 415
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 413,
+      "actual": 413
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks/2147483647",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks/999999999999999999999",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/999999999999999999999",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/999999999999999999999",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/2147483647",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/2147483647",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/2",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/1",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks/1",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/1",
+      "expected": 404,
+      "actual": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/3",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/4",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/5",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/6",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/7",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/8",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/10",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/9",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/12",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/11",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/tasks",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tasks/13",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/tasks/13",
+      "expected": 204,
+      "actual": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "expected": 200,
+      "actual": 200
+    }
+  ]
+}
