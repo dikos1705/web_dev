@@ -16,6 +16,6 @@ Tests exercise seeded counts and data variety, individual criminal details, rewa
 
 The actual exported Postman JSON was executed against the live Uvicorn API with PostgreSQL. Its temporary hunt was deleted by the collection. The initial 5 criminals and 10 logs remained afterward.
 
-Docker/Compose were not installed on the local machine, so the image build and container startup were not locally executed. The workflow `.github/workflows/verify.yml` is configured to check the image and Compose setup as well as repeat the API tests and Newman collection. Its result must be read from GitHub Actions; this document does not claim a CI pass before the run completes.
+Docker/Compose were not installed on the local machine, so container checks ran on GitHub's Linux runner. [GitHub Actions run 41184887637](https://github.com/dikos1705/web_dev/actions/runs/41184887637) completed successfully for implementation commit `8db54a6`: PostgreSQL tests, lint/format, live API Newman collection, Docker image build, Compose startup, containerized Newman collection and non-root runtime user all passed.
 
 To repeat the local database checks, configure `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, install `requirements-dev.txt`, then run the commands from README. To repeat the containerized checks, start Compose and run `docker compose run --rm postman`.

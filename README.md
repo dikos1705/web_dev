@@ -37,7 +37,7 @@ docker compose up -d --build --wait
 
 On the first start, tables are created and **5 criminals + 10 hunt logs** are imported in a transaction. Later starts preserve data without duplication. PostgreSQL data lives in a named volume. `docker compose down` stops/removes containers while keeping that volume. Rebuild after source changes. If port 8084 is busy, change `APP_PORT` in `.env` and the Postman `baseUrl`.
 
-The actual `.env` is excluded from Git and Docker builds. A local `.env` was generated in the working folder for convenience; do not overwrite it if already present. Changing a password in `.env` does not change an existing PostgreSQL volume's password.
+The actual `.env` is excluded from Git and Docker builds. Preserve an existing local `.env` when updating the project. Changing a password in `.env` does not change an existing PostgreSQL volume's password.
 
 ## Models
 
