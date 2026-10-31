@@ -56,7 +56,7 @@ def main():
     assert len(page['flights'])==2 and page['total']>=3
     assert page['flights'][0]['price_kzt']<=page['flights'][1]['price_kzt']
     assert api('/api/flights?limit=1&offset=1')['flights'][0]['id']!=api('/api/flights?limit=1')['flights'][0]['id']
-    departure=datetime.now(timezone.utc)+timedelta(days=30)
+    departure=(datetime.now(timezone.utc)+timedelta(days=30)).replace(hour=12,minute=0,second=0,microsecond=0)
     flight={'number':'AE'+str(9000+uuid4().int%1000),'origin_code':'ALA','destination_code':'NQZ',
         'departure_at':departure.isoformat(),'arrival_at':(departure+timedelta(minutes=100)).isoformat(),'price_kzt':20001}
     api('/api/flights','POST',flight,expected=401)
@@ -66,10 +66,20 @@ def main():
     api('/api/flights','POST',{**flight,'departure_at':'2020-01-01T00:00:00Z'},expected=422,headers=admin)
     f=api('/api/flights','POST',flight,201,admin);fid=f['id'];path='/api/flights/'+str(fid)
     assert f['available_seats']==24
+    assert f['origin']['code']=='ALA' and f['destination']['code']=='NQZ'
+    search_date=departure.date().isoformat()
+    assert fid in [item['id'] for item in api('/api/flights?origin=ALA&destination=NQZ&departure_date='+search_date)['flights']]
+    assert fid in [item['id'] for item in api('/api/flights?departure_date='+search_date)['flights']]
+    assert api('/api/flights?departure_date=2000-01-01')['total']==0
     api('/api/flights','POST',flight,409,admin)
     assert api(path)['price_kzt']==20001
+    # Route changes must refresh related airports before serializing an async ORM object.
+    rerouted=api(path,'PUT',{**flight,'origin_code':'DXB','destination_code':'IST'},headers=admin)
+    assert rerouted['origin']['code']=='DXB' and rerouted['destination']['code']=='IST'
+    assert api(path)['destination']['code']=='IST'
     f=api(path,'PUT',{**flight,'price_kzt':20003},headers=admin)
     assert f['price_kzt']==20003
+    assert f['origin']['code']=='ALA' and f['destination']['code']=='NQZ'
     assert len(api(path+'/seats')['seats'])==24
     create=payload(fid,'1A','standard')
     api('/api/bookings','POST',{**create,'total_kzt':1},422)

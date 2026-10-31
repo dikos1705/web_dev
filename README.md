@@ -1,6 +1,6 @@
 # Aeron — A little further.
 
-A flight reservation application built with **FastAPI, SQLAlchemy and PostgreSQL**, with a responsive browser interface and a reproducible Docker Compose environment. Web Development Midterm · Dias.
+A flight reservation application built with **FastAPI, async SQLAlchemy and PostgreSQL**, with a responsive browser interface and a reproducible Docker Compose environment. Web Development Midterm · Dias.
 
 Search routes, compare three fares, choose a seat, reserve a flight, edit passenger details, download an itinerary and cancel a reservation. The server protects seat inventory in PostgreSQL transactions, computes prices itself and supports safe request retries.
 
@@ -76,6 +76,8 @@ Persistent airports, flights and bookings
 ```
 
 `backend/main.py` defines HTTP routes and dependencies; `schemas.py` validates inputs/outputs; `models.py` defines relational constraints; `services.py` owns prices and booking transactions; `security.py` checks keys; `seed.py` creates synthetic schedules. `frontend/` is dependency-free HTML/CSS/JavaScript.
+
+HTTP handlers, database dependencies, booking services and demo seeding use `async`/`await`. SQLAlchemy uses `create_async_engine`, the async psycopg 3 dialect and one `AsyncSession` per request. Database reads, writes and transaction commits are awaited. Relationships are joined eagerly when reading records and refreshed explicitly after flight creation or route changes, so response serialization does not trigger implicit database I/O. Pure validation, pricing and token calculations remain ordinary functions. Startup initializes the schema through an async connection's `run_sync` bridge; shutdown awaits connection-pool disposal.
 
 Each write commits once or rolls back. All inventory mutations lock the flight row before the booking row, so creation, cancellation and seat changes serialize on that flight. A PostgreSQL partial unique index additionally forbids two confirmed bookings on the same flight/seat. Cancellation removes a record from that index without erasing its history. Flights with booking history cannot be changed or deleted. The server stores integer money, never accepts a client-provided total, and derives management tokens using HMAC with the local booking secret.
 

@@ -1,7 +1,7 @@
 {
   "application": "Aeron",
   "passed": true,
-  "checks": 73,
+  "checks": 78,
   "persistence": true,
   "results": [
     {
@@ -110,23 +110,48 @@
       "status": 201
     },
     {
+      "method": "GET",
+      "path": "/api/flights?origin=ALA&destination=NQZ&departure_date=2026-11-30",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?departure_date=2026-11-30",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights?departure_date=2000-01-01",
+      "status": 200
+    },
+    {
       "method": "POST",
       "path": "/api/flights",
       "status": 409
     },
     {
       "method": "GET",
-      "path": "/api/flights/256",
+      "path": "/api/flights/190",
       "status": 200
     },
     {
       "method": "PUT",
-      "path": "/api/flights/256",
+      "path": "/api/flights/190",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/flights/256/seats",
+      "path": "/api/flights/190",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/flights/190",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/flights/190/seats",
       "status": 200
     },
     {
@@ -171,12 +196,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 401
     },
     {
       "method": "GET",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 401
     },
     {
@@ -191,72 +216,72 @@
     },
     {
       "method": "GET",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34/itinerary",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639/itinerary",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/flights/256",
+      "path": "/api/flights/190",
       "status": 200
     },
     {
       "method": "PUT",
-      "path": "/api/flights/256",
+      "path": "/api/flights/190",
       "status": 409
     },
     {
       "method": "DELETE",
-      "path": "/api/flights/256",
+      "path": "/api/flights/190",
       "status": 409
     },
     {
       "method": "DELETE",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 409
     },
     {
       "method": "PUT",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 422
     },
     {
       "method": "PUT",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 422
     },
     {
       "method": "PATCH",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 422
     },
     {
       "method": "PUT",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 200
     },
     {
       "method": "PATCH",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 422
     },
     {
       "method": "PATCH",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 422
     },
     {
       "method": "PATCH",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/flights/256/seats",
+      "path": "/api/flights/190/seats",
       "status": 200
     },
     {
@@ -266,7 +291,7 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 409
     },
     {
@@ -278,12 +303,12 @@
     },
     {
       "method": "POST",
-      "path": "/api/bookings/c40ca7c4-755c-4e78-858c-df9953a5fae7/cancel",
+      "path": "/api/bookings/83ff49be-3c9c-47d5-8850-e0bc67a63f67/cancel",
       "status": 200
     },
     {
       "method": "DELETE",
-      "path": "/api/bookings/c40ca7c4-755c-4e78-858c-df9953a5fae7",
+      "path": "/api/bookings/83ff49be-3c9c-47d5-8850-e0bc67a63f67",
       "status": 204
     },
     {
@@ -293,12 +318,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/flights/256/seats",
+      "path": "/api/flights/190/seats",
       "status": 200
     },
     {
@@ -312,17 +337,17 @@
     },
     {
       "method": "POST",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34/cancel",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639/cancel",
       "status": 200
     },
     {
       "method": "POST",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34/cancel",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639/cancel",
       "status": 200
     },
     {
       "method": "PATCH",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 409
     },
     {
@@ -332,42 +357,42 @@
     },
     {
       "method": "POST",
-      "path": "/api/bookings/2c8fe000-e3c7-4628-b57f-9b9a18cd15fc/cancel",
+      "path": "/api/bookings/f0e55cb4-bd94-499e-84f6-49db39ea1fb4/cancel",
       "status": 200
     },
     {
       "method": "DELETE",
-      "path": "/api/bookings/2c8fe000-e3c7-4628-b57f-9b9a18cd15fc",
+      "path": "/api/bookings/f0e55cb4-bd94-499e-84f6-49db39ea1fb4",
       "status": 204
     },
     {
       "method": "POST",
-      "path": "/api/bookings/ae83f863-469d-4a56-bbd3-6d5507f20f91/cancel",
+      "path": "/api/bookings/cf4fb0d7-dccc-449a-8b73-a8b68599271f/cancel",
       "status": 200
     },
     {
       "method": "DELETE",
-      "path": "/api/bookings/ae83f863-469d-4a56-bbd3-6d5507f20f91",
+      "path": "/api/bookings/cf4fb0d7-dccc-449a-8b73-a8b68599271f",
       "status": 204
     },
     {
       "method": "DELETE",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 204
     },
     {
       "method": "GET",
-      "path": "/api/bookings/f44f6cd9-f2b7-4309-9594-376188560c34",
+      "path": "/api/bookings/d243ceb2-f9b8-4772-ba55-8f453b017639",
       "status": 404
     },
     {
       "method": "DELETE",
-      "path": "/api/flights/256",
+      "path": "/api/flights/190",
       "status": 204
     },
     {
       "method": "GET",
-      "path": "/api/flights/256",
+      "path": "/api/flights/190",
       "status": 404
     }
   ]

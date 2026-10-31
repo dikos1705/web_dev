@@ -13,7 +13,7 @@ admin_header = APIKeyHeader(name='X-Admin-Key', auto_error=False)
 booking_header = APIKeyHeader(name='X-Booking-Token', auto_error=False)
 
 
-def require_admin(key: Annotated[str | None, Depends(admin_header)]):
+async def require_admin(key: Annotated[str | None, Depends(admin_header)]):
     expected = get_settings().admin_api_key.get_secret_value()
     if not key or not secrets.compare_digest(key, expected):
         raise HTTPException(401, 'A valid X-Admin-Key is required')
