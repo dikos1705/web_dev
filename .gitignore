@@ -3,6 +3,11 @@ __pycache__/
 .venv/
 .env
 .env.*
+!.env.example
 .idea/
 .vscode/
 *.log
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/

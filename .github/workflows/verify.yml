@@ -1,0 +1,70 @@
+name: Midterm API verification
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: bounty
+          POSTGRES_USER: bounty
+          POSTGRES_PASSWORD: ci-only-ephemeral-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bounty -d bounty"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_NAME: bounty
+      DB_USER: bounty
+      DB_PASSWORD: ci-only-ephemeral-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check backend tests
+      - run: ruff format --check backend tests
+      - run: python -m pytest -q --tb=short
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --global newman
+      - name: Start API and run the Postman collection
+        run: |
+          uvicorn backend.main:app --host 127.0.0.1 --port 8084 > /tmp/bounty-api.log 2>&1 &
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(30):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8084/health', timeout=2)
+                  break
+              except OSError:
+                  if attempt == 29:
+                      raise
+                  time.sleep(1)
+          PY
+          newman run postman/SpaceBountyHunters.postman_collection.json --bail
+      - name: Build Docker image
+        run: docker build -t space-bounty:test .
+      - name: Check Compose startup and Postman against the image
+        run: |
+          export POSTGRES_PASSWORD=compose-ci-ephemeral-password
+          export APP_PORT=8085
+          docker compose up -d --build --wait
+          docker compose run --rm postman
+          test "$(docker compose exec -T backend id -u)" = 10001
+      - name: Logs
+        if: always()
+        run: |
+          cat /tmp/bounty-api.log || true
+          docker compose logs || true
+      - name: Stop CI containers
+        if: always()
+        run: POSTGRES_PASSWORD=compose-ci-ephemeral-password docker compose down

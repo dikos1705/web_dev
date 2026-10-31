@@ -1,101 +1,157 @@
-# Homework #1 — Containerized Web Application
+# Space Bounty Hunters — Midterm Practical Assignment
 
-A small Python web server with an HTML/CSS/JavaScript interface, an interactive counter, and a configurable greeting. Author: Dias.
+REST API on **FastAPI + PostgreSQL + SQLAlchemy**. Browse wanted criminals and maintain a journal of capture attempts. Author: Dias Kasymzhan.
 
-## Requirements
+Branch: [midterm-fastapi](https://github.com/dikos1705/web_dev/tree/midterm-fastapi). Russian explanation: [EXPLANATION_RU.md](EXPLANATION_RU.md).
 
-- Docker Desktop running in Linux containers mode (or Docker Engine on Linux).
-- A free host port, such as 8080.
+## Start with Docker Compose
 
-## Build and run
-
-Open a terminal in this repository's directory:
+Requires Docker Engine/Desktop with Linux containers and Compose v2.
 
 ```sh
-docker build -t web-homework:1.0 .
-docker run -d --name web-homework -p 127.0.0.1:8080:8000 -e APP_MESSAGE="Hello from Dias!" web-homework:1.0
-```
-
-Open **http://localhost:8080**. Click **Add one +** and **Reset** to try the counter. The greeting is loaded from the Python server, using the `APP_MESSAGE` environment variable.
-
-`8080:8000` maps host port 8080 to container port 8000. The host binding is restricted to the local computer. The application listens on `0.0.0.0` inside the container so Docker can forward traffic to it.
-
-## Verify and stop
-
-```sh
-docker ps --filter name=web-homework
-docker logs web-homework
-docker inspect --format='{{.State.Health.Status}}' web-homework
-```
-
-The health status becomes `healthy` after the health check runs. Visit http://localhost:8080/health for `{"status":"ok"}` and http://localhost:8080/api/info for the runtime greeting and port.
-
-```sh
-docker stop web-homework
-docker rm web-homework
-```
-
-## Environment variables
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `APP_MESSAGE` | `Hello from Docker!` | Greeting displayed on the page |
-| `PORT` | `8000` | Port listened to by the Python server |
-
-To change both the greeting and the internal port, use a separate container:
-
-```sh
-docker run -d --name web-homework-custom -p 127.0.0.1:8081:9000 -e PORT=9000 -e APP_MESSAGE="My custom greeting" web-homework:1.0
-```
-
-Open http://localhost:8081. Clean up with `docker stop web-homework-custom` followed by `docker rm web-homework-custom`.
-
-## Files and Dockerfile
-
-- `app.py`: HTTP server and `/`, `/api/info`, `/health` routes; unknown routes return 404.
-- `index.html`: responsive interface, counter, and API request.
-- `Dockerfile`: image build and startup instructions.
-- `.dockerignore`: allows only the application and Docker build files into the build context.
-- `DEFENSE_RU.md`: explanation and live-change walkthrough in Russian.
-
-| Instruction | Purpose |
-| --- | --- |
-| `FROM python:3.12-slim` | Small Python base image |
-| `WORKDIR /app` | Working directory for subsequent instructions and startup |
-| `ENV` | Default runtime settings, overridable with `docker run -e` |
-| `RUN` | Creates a dedicated unprivileged user during the build |
-| `COPY --chown` | Copies only the two required application files with appropriate ownership |
-| `USER` | Runs the application without root privileges |
-| `EXPOSE` | Documents the default container port; does not publish it |
-| `HEALTHCHECK` | Requests the application's health endpoint |
-| `CMD` | Starts Python using exec form |
-
-Basic optimization: slim base, no third-party dependencies or package installation, minimal build context, and stable user-creation step before changing source files for build-cache reuse. A multi-stage build is unnecessary because this application has no compilation step. Python's standard-library HTTP server is sufficient for this classroom demonstration; it is not a production deployment server.
-
-## Live change and rebuild
-
-Change `Try the app` in `index.html` to `My updated app`, save, and run:
-
-```sh
-docker build -t web-homework:2.0 .
-docker stop web-homework
-docker rm web-homework
-docker run -d --name web-homework -p 127.0.0.1:8080:8000 -e APP_MESSAGE="Updated version by Dias!" web-homework:2.0
-```
-
-Refresh http://localhost:8080 to see the updated heading. Source changes require rebuilding and recreating the container; changing `APP_MESSAGE` only requires recreating it with a new `-e` value.
-
-## Automated verification
-
-The GitHub Actions workflow in `.github/workflows/docker.yml` builds the image, runs two containers, and checks the HTML page, health endpoint, environment overrides, custom port, 404 responses, non-root user and Docker health status. See the repository's **Actions** tab for actual run results.
-
-## Submit on GitHub
-
-Repository: **https://github.com/dikos1705/web_dev**. To download it on another computer:
-
-```sh
-git clone https://github.com/dikos1705/web_dev.git
+git clone --branch midterm-fastapi https://github.com/dikos1705/web_dev.git
 cd web_dev
 ```
 
-Then follow the build and run commands above. Ensure the instructor can access the repository, submit **https://github.com/dikos1705/web_dev** in the homework page, then press **Turn In**.
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+On macOS/Linux:
+
+```sh
+cp .env.example .env
+```
+
+Replace `POSTGRES_PASSWORD` in `.env` with your own local password, then run:
+
+```sh
+docker compose up -d --build --wait
+```
+
+- Swagger UI: **http://localhost:8084/docs**
+- OpenAPI: http://localhost:8084/openapi.json
+- Database health: http://localhost:8084/health
+
+On the first start, tables are created and **5 criminals + 10 hunt logs** are imported in a transaction. Later starts preserve data without duplication. PostgreSQL data lives in a named volume. `docker compose down` stops/removes containers while keeping that volume. Rebuild after source changes. If port 8084 is busy, change `APP_PORT` in `.env` and the Postman `baseUrl`.
+
+The actual `.env` is excluded from Git and Docker builds. A local `.env` was generated in the working folder for convenience; do not overwrite it if already present. Changing a password in `.env` does not change an existing PostgreSQL volume's password.
+
+## Models
+
+`WantedCriminal` (`wanted_criminals`): `id`, nullable `name`, `nickname`, decimal `reward`, `difficulty` (1–10), `armed`, `has_crew`, `escape_master`, plus either `latitude` and `longitude` or `location_note`. PostgreSQL constraints validate reward, difficulty, coordinate bounds and mutually exclusive location formats.
+
+`HuntLog` (`hunt_logs`): `id`, foreign-key `criminal_id`, `success`, `notes`, automatic timezone-aware `created_at`. One criminal has many attempts; the database prevents orphan logs. Timestamp is generated by PostgreSQL, never accepted from a client. Rewards are JSON strings such as `"25000.00"` to preserve exact decimal amounts.
+
+## Endpoints
+
+| Method | URL | Result |
+| --- | --- | --- |
+| GET | `/api/criminals/` | List with combined filters and sorting |
+| GET | `/api/criminals/{id}/` | One wanted criminal |
+| GET | `/api/hunts/` | All attempts; optional `criminal_id` filter |
+| GET | `/api/hunts/{id}/` | One attempt |
+| POST | `/api/hunts/` | Create attempt, `201` and `Location` |
+| PATCH | `/api/hunts/{id}/` | Update `success` and/or `notes`, `200` |
+| DELETE | `/api/hunts/{id}/` | Delete attempt, `204` with empty body |
+
+Criminal query parameters: `min_reward`, `max_reward`, `armed`, `has_crew`, `escape_master`, and `sort=reward` (default ascending) or `sort=-reward`. Every provided filter is combined with **AND**. False boolean values work as filters too. Equal rewards use ID as a stable secondary order. Amounts must be nonnegative with at most two fractional digits; an inverted range returns `422`.
+
+```text
+GET /api/criminals/?min_reward=5000&armed=true&sort=-reward
+GET /api/criminals/?min_reward=5000&max_reward=9000&armed=true&has_crew=false&escape_master=false
+GET /api/criminals/3/
+GET /api/hunts/?criminal_id=3
+```
+
+Create a hunt (`POST /api/hunts/`):
+
+```json
+{
+  "criminal_id": 3,
+  "success": false,
+  "notes": "Target escaped through an asteroid field."
+}
+```
+
+Update it (`PATCH /api/hunts/{id}/`):
+
+```json
+{"success": true, "notes": "Captured at the Europa outpost."}
+```
+
+Unknown positive IDs return `404`; invalid types/IDs, invalid query values, extra body fields, empty notes or invalid booleans return `422`. Notes are stripped and limited to 1–5000 characters. PATCH rejects empty bodies and explicit `null`; omitted fields retain their values. `criminal_id` and `created_at` cannot be patched. Filtering a list for an absent criminal returns `[]`.
+
+## Postman collection
+
+Import [SpaceBountyHunters.postman_collection.json](postman/SpaceBountyHunters.postman_collection.json) into Postman. The collection variable `baseUrl` defaults to `http://localhost:8084`. Run all **26 requests in order** using Collection Runner. The collection saves IDs automatically, checks filters, sorting, details, the entire hunt lifecycle, timestamps and invalid requests. It creates one temporary log and deletes it at the end; the 10 original logs remain. If a run is interrupted, remove its created log using the saved `huntId`.
+
+Alternatively, run Newman through Compose:
+
+```sh
+docker compose run --rm postman
+```
+
+Or with Node.js installed:
+
+```sh
+npx newman run postman/SpaceBountyHunters.postman_collection.json --bail
+```
+
+## Database setup/import
+
+The normal Compose startup handles setup automatically. To rerun the same idempotent importer explicitly:
+
+```sh
+docker compose exec backend python -m backend.seed
+```
+
+If `wanted_criminals` already contains records, the importer makes no changes. It never clears user data. Set `SEED_DEMO=false` to disable automatic import. The project creates a new schema on first use; it does not implement migration of unrelated pre-existing tables.
+
+To inspect the data:
+
+```sh
+docker compose exec database psql -U bounty -d bounty -c "SELECT COUNT(*) FROM wanted_criminals; SELECT COUNT(*) FROM hunt_logs;"
+```
+
+Use your configured database/user names if different.
+
+## Run without Docker
+
+Requires Python **3.12** and a running PostgreSQL **17** instance. Create a PostgreSQL database `bounty` owned by user `bounty`, or use your own database and role. In PowerShell, from the repository root:
+
+```powershell
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements-dev.txt
+$env:DB_HOST = '127.0.0.1'
+$env:DB_PORT = '5432'
+$env:DB_NAME = 'bounty'
+$env:DB_USER = 'bounty'
+$env:DB_PASSWORD = Read-Host 'PostgreSQL password'
+.venv/Scripts/python.exe -m backend.seed
+.venv/Scripts/python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8084
+```
+
+For macOS/Linux, activate `.venv/bin/activate`, use `python`, and set the same variables with `export`. Direct Python startup reads `DB_*` from the environment; `.env` with `POSTGRES_*` is used by Compose only. SQLAlchemy constructs the connection URL safely even when a password contains special characters.
+
+## Verification
+
+With PostgreSQL running and `DB_*` set as above:
+
+```sh
+python -m pytest -q --tb=short
+ruff check backend tests
+ruff format --check backend tests
+```
+
+Tests use isolated randomly named PostgreSQL schemas. The test role must be allowed to create schemas; each test deletes only its own schema. Checks cover all filters, false values, sort directions, CRUD, server timestamps, immutable fields, invalid requests, foreign keys, database constraints, one-to-many mapping and repeatable import. Test execution does not import records into the public schema.
+
+GitHub Actions runs tests on PostgreSQL, the Postman collection, Docker image build, Compose startup and the containerized collection. See [docs/VERIFICATION.md](docs/VERIFICATION.md) for the actual local verification results.
+
+## Submission
+
+Submit the [midterm-fastapi branch](https://github.com/dikos1705/web_dev/tree/midterm-fastapi). The source, setup instructions, explanation, tests and exported Postman collection are included. Press **Turn In** in the course system yourself; pushing code to GitHub does not submit the assignment there.
+
+References: [FastAPI relational databases](https://fastapi.tiangolo.com/tutorial/sql-databases/), [SQLAlchemy sessions](https://docs.sqlalchemy.org/en/20/orm/session_basics.html).

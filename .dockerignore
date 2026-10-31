@@ -1,6 +1,4 @@
-# Only application files enter the build context.
 **
-!app.py
-!index.html
-!Dockerfile
-!.dockerignore
+!requirements.txt
+!backend/
+!backend/*.py

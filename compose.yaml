@@ -1,0 +1,42 @@
+name: space-bounty-midterm
+services:
+  backend:
+    build: .
+    ports:
+      - "127.0.0.1:${APP_PORT:-8084}:8000"
+    environment:
+      DB_HOST: database
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-bounty}
+      DB_USER: ${POSTGRES_USER:-bounty}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bounty}
+      POSTGRES_USER: ${POSTGRES_USER:-bounty}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  postman:
+    image: postman/newman:alpine
+    profiles: [tools]
+    volumes:
+      - ./postman:/etc/newman:ro
+    command: run /etc/newman/SpaceBountyHunters.postman_collection.json --env-var baseUrl=http://backend:8000 --bail
+    depends_on:
+      backend:
+        condition: service_healthy
+volumes:
+  postgres-data:
